@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulado CCAR-F</title>
+<style>
+  :root {
+    --bg: #eef1f5; --card: #ffffff; --ink: #141a24; --muted: #6b7686; --line: #d9dee6;
+    --opt: #f4f6f9; --accent: #1d2433; --accent-ink: #ffffff;
+    --sel: #e4ebff; --sel-line: #3b63d8;
+    --ok: #1e8e4e; --ok-bg: #e5f6ec; --bad: #c93a3a; --bad-bg: #fdeaea; --flag: #b7791f; --flag-bg: #fdf3dc;
+    --on: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151b; --card: #1b2029; --ink: #e8ecf2; --muted: #98a3b3; --line: #2e3643;
+      --opt: #232a35; --accent: #e8ecf2; --accent-ink: #12151b;
+      --sel: #1f2c52; --sel-line: #7d9bf5;
+      --ok: #55c98a; --ok-bg: #15301f; --bad: #f08080; --bad-bg: #3a1c1c; --flag: #e3b25a; --flag-bg: #3a2e14;
+      --on: #12151b; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151b; --card: #1b2029; --ink: #e8ecf2; --muted: #98a3b3; --line: #2e3643;
+    --opt: #232a35; --accent: #e8ecf2; --accent-ink: #12151b;
+    --sel: #1f2c52; --sel-line: #7d9bf5;
+    --ok: #55c98a; --ok-bg: #15301f; --bad: #f08080; --bad-bg: #3a1c1c; --flag: #e3b25a; --flag-bg: #3a2e14;
+    --on: #12151b; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
+
+  .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .top-in { max-width: 860px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .top h1 { font-size: 22px; margin: 0; margin-right: auto; }
+  .pill { font-size: 11px; font-weight: 700; letter-spacing: .08em; padding: 5px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
+  .stat { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stat b { color: var(--ink); }
+  .stat.late b { color: var(--bad); }
+  .btn { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.armed { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); }
+
+  details.nav { margin: 16px 0 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+  details.nav summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; margin-top: 10px; }
+  .grid a { text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--opt); color: var(--muted); text-decoration: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .grid a.answered { background: var(--sel); border-color: var(--sel-line); color: var(--ink); }
+  .grid a.flagged { box-shadow: inset 0 -3px 0 var(--flag); }
+  .grid a.right { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .grid a.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-top: 18px; scroll-margin-top: 80px; }
+  .scenario { border-style: dashed; }
+  .scenario h2 { margin: 0 0 6px; font-size: 17px; }
+  .scenario p { margin: 0; color: var(--muted); font-size: 14px; }
+  .label { display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .label .tag { letter-spacing: .04em; text-transform: none; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .label .tag.multi { border-color: var(--sel-line); color: var(--sel-line); }
+  .label .flagbtn { margin-left: auto; border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 500; }
+  .card.is-flagged .flagbtn { background: var(--flag-bg); border-color: var(--flag); color: var(--flag); }
+  .q { font-weight: 700; font-size: 17px; margin: 10px 0 16px; overflow-wrap: anywhere; }
+  .opt { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; background: var(--opt); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 10px; font-size: 15px; overflow-wrap: anywhere; }
+  .opt .let { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .opt.sel { background: var(--sel); border-color: var(--sel-line); }
+  .opt.sel .let { background: var(--sel-line); border-color: var(--sel-line); color: var(--on); }
+  .done .opt { cursor: default; }
+  .opt.correct { background: var(--ok-bg); border-color: var(--ok); }
+  .opt.correct .let { background: var(--ok); border-color: var(--ok); color: var(--on); }
+  .opt.sel.incorrect { background: var(--bad-bg); border-color: var(--bad); }
+  .opt.sel.incorrect .let { background: var(--bad); border-color: var(--bad); color: var(--on); }
+  .expl { display: none; margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--line); font-size: 14px; color: var(--muted); }
+  .expl b { color: var(--ink); }
+  .done .expl { display: block; }
+  .done .card.q-right .expl { border-left-color: var(--ok); }
+  .done .card.q-wrong .expl { border-left-color: var(--bad); }
+  .only-wrong .card.q-right, .only-wrong .card.scenario { display: none; }
+
+  #result { display: none; }
+  .done #result { display: block; }
+  #result h2 { margin: 0 0 4px; font-size: 26px; }
+  #result .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .rows { display: grid; gap: 8px; margin: 10px 0 16px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 14px; }
+  .row .bar { height: 6px; background: var(--opt); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .row .bar i { display: block; height: 100%; background: var(--sel-line); }
+  .row .n { text-align: right; font-variant-numeric: tabular-nums; }
+  #result h3 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 16px 0 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #copyout { display: none; width: 100%; height: 150px; margin-top: 10px; font: 13px/1.4 ui-monospace, Consolas, monospace; background: var(--opt); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-in">
+    <h1>Simulado</h1>
+    <span class="pill">IN ENGLISH</span>
+    <span class="stat" id="timer">Tempo <b>120:00</b></span>
+    <span class="stat" id="count">Respondidas <b>0/60</b></span>
+    <button class="btn primary" id="finish">Finalizar</button>
+    <button class="btn" id="reset">Refazer exercícios</button>
+  </div>
+</div>
+
+<div class="wrap" id="app">
+  <details class="nav" open>
+    <summary>Navegação · azul = respondida · traço amarelo = marcada para revisar</summary>
+    <div class="grid" id="grid"></div>
+  </details>
+
+  <div class="card" id="result">
+    <h2 id="score"></h2>
+    <p class="sub" id="scoresub"></p>
+    <h3>Por domínio</h3>
+    <div class="rows" id="bydomain"></div>
+    <h3>Por cenário</h3>
+    <div class="rows" id="byscenario"></div>
+    <div class="actions">
+      <button class="btn" id="onlywrong">Mostrar só as erradas</button>
+      <button class="btn" id="copy">Copiar resultado</button>
+    </div>
+    <textarea id="copyout" readonly></textarea>
+    <p class="note">Simulado não oficial, escrito a partir do Exam Guide v1.0. A nota real é uma escala de 100 a 1.000 com corte em 720, que não equivale diretamente a esta porcentagem.</p>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script id="data">
+const DOMAINS = {
+  1: 'Agentic Architecture & Orchestration',
+  2: 'Tool Design & MCP Integration',
+  3: 'Claude Code Configuration & Workflows',
+  4: 'Prompt Engineering & Structured Output',
+  5: 'Context Management & Reliability'
+};
+
+const SCEN = {
+  CS: { tag: 'Customer Support', name: 'Customer Support Resolution Agent',
+        desc: 'You are building a customer support agent with the Claude Agent SDK. It handles returns, billing disputes and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human).' },
+  MR: { tag: 'Multi-Agent Research', name: 'Multi-Agent Research System',
+        desc: 'A coordinator agent delegates to specialized subagents: web search, document analysis, synthesis and report generation. The system produces comprehensive, cited reports.' },
+  DP: { tag: 'Developer Productivity', name: 'Developer Productivity with Claude',
+        desc: 'An agent helps engineers explore unfamiliar codebases, understand legacy systems and automate repetitive tasks, using the built-in tools (Read, Write, Edit, Bash, Grep, Glob) and MCP servers.' },
+  CG: { tag: 'Code Generation', name: 'Code Generation with Claude Code',
+        desc: 'Your team uses Claude Code for code generation, refactoring and debugging. You configure CLAUDE.md, rules, skills and decide when to use plan mode versus direct execution.' },
+  CI: { tag: 'Claude Code CI', name: 'Claude Code for Continuous Integration',
+        desc: 'Claude Code runs in your CI/CD pipeline: automated code review, test generation and pull request feedback. Feedback must be actionable, with few false positives.' },
+  EX: { tag: 'Data Extraction', name: 'Structured Data Extraction',
+        desc: 'A system extracts information from unstructured documents, validates the output with JSON schemas and feeds downstream systems. It must handle edge cases gracefully.' }
+};
+
+// s: scenario, d: domain, t: task statement, h: 1 = harder item, a: indexes of the correct options
+const Q = [
+  // ---------- Customer Support ----------
+  { s: 'CS', d: 1, t: '1.4', h: 0,
+    q: 'A customer writes: "I was charged twice for order #8841, the replacement for my other order still has not shipped, and I need to change the email on my account." The agent fixes the duplicate charge and ends the conversation. Which design best handles requests like this?',
+    o: ['Ask the customer to send each issue as a separate message, so that every conversation deals with a single concern.',
+        'Decompose the request into distinct items, investigate each using shared customer context, then synthesize one unified response.',
+        'Handle the highest-value issue and escalate the remaining ones to a human agent.',
+        'Start an independent session for each issue, each with its own copy of the tools, so that the three concerns cannot interfere with one another while they are handled.'],
+    a: [1],
+    e: 'Multi-concern requests should be decomposed into distinct items, investigated with shared context, and answered in one unified resolution. Independent sessions lose the shared context; pushing the work to the customer or to humans lowers first-contact resolution.' },
+
+  { s: 'CS', d: 1, t: '1.4', h: 0,
+    q: 'Escalated cases go to human agents who cannot see the conversation transcript. Today the handoff note reads "Customer needs help with a refund", and the humans have to ask everything again. What should the escalation contain?',
+    o: ['A structured summary: customer ID, root cause, refund amount, and recommended action.',
+        'The customer’s sentiment score and the number of turns the conversation took before escalation.',
+        'A link to the session, so the human agent can continue it with --resume.',
+        'A higher priority flag, so the case is picked up faster by the next available agent.'],
+    a: [0],
+    e: 'Because the human lacks the transcript, the handoff must be self-contained: customer details, root cause analysis, amounts, and the recommended action.' },
+
+  { s: 'CS', d: 1, t: '1.5', h: 0,
+    q: 'Three MCP tools return dates differently: one as Unix timestamps, one as ISO 8601 strings, one as "MM/DD/YY". The agent sometimes miscalculates whether an order is inside the return window. What is the most reliable fix?',
+    o: ['Add a system prompt section that explains each tool’s date format in detail and gives step-by-step instructions for converting between them.',
+        'Add few-shot examples that show correct date comparisons across the three formats.',
+        'Ask the customer to confirm the purchase date before the return policy is applied.',
+        'Add a PostToolUse hook that normalizes all dates to one format before the model sees the results.'],
+    a: [3],
+    e: 'A PostToolUse hook transforms tool results deterministically before the model processes them. Prompt explanations and examples leave the conversion to probabilistic model behavior.' },
+
+  { s: 'CS', d: 1, t: '1.4', h: 1,
+    q: 'Which TWO requirements should be enforced programmatically (hooks or prerequisite gates) rather than through prompt instructions?',
+    o: ['Use a warm, empathetic tone with frustrated customers.',
+        'Never issue a refund before the customer’s identity has been verified.',
+        'Prefer short answers when the question is simple.',
+        'Never process a refund above $500 without human approval.',
+        'Mention the self-service portal when it is relevant.'],
+    a: [1, 3],
+    e: 'Prompt instructions have a non-zero failure rate. Rules with financial or compliance consequences (identity verification, refund thresholds) need deterministic enforcement; tone and style are fine as prompt guidance.' },
+
+  { s: 'CS', d: 1, t: '1.1', h: 0,
+    q: 'Which TWO are anti-patterns for deciding when an agentic loop should stop?',
+    o: ['Stopping when stop_reason is "end_turn".',
+        'Scanning the assistant’s text for phrases like "I have finished" to detect completion.',
+        'Using a fixed limit of 5 iterations as the main stopping mechanism.',
+        'Continuing the loop while stop_reason is "tool_use".',
+        'Appending each tool result to the conversation before the next request.'],
+    a: [1, 2],
+    e: 'The loop should be driven by stop_reason. Parsing natural language for completion and using an arbitrary iteration cap as the primary stop are both listed anti-patterns (a cap is acceptable only as a safety backstop).' },
+
+  { s: 'CS', d: 1, t: '1.1', h: 0,
+    q: 'After running a tool, your code sends the next request containing only the new tool result, without the earlier messages. The agent keeps calling get_customer again and asks the customer to repeat details. What is the fix?',
+    o: ['Set tool_choice to "any" so the agent is forced to move on to a different tool.',
+        'Cache get_customer responses so that the repeated calls become cheap.',
+        'Append each tool result to the conversation history and send the full history on every request.',
+        'Add an instruction telling the agent never to call the same tool twice within a conversation, and to rely on what it already knows about the customer.'],
+    a: [2],
+    e: 'The model is stateless between requests. Tool results must be appended to the conversation history and the complete history sent each time, so the model can reason about the next action.' },
+
+  { s: 'CS', d: 2, t: '2.1', h: 1,
+    q: 'Both get_account and lookup_order have detailed, well-differentiated descriptions. Still, whenever a customer uses the word "bill" (for example, "the bill of materials in my order is wrong"), the agent calls get_account. The system prompt contains: "When the customer mentions billing, always check the account first." What should you examine first?',
+    o: ['Whether the tool descriptions need additional example queries covering the different meanings the word "bill" can have in a customer message.',
+        'Whether the keyword-based instruction in the system prompt is creating an unintended tool association.',
+        'Whether the two tools should be merged into a single lookup tool.',
+        'Whether tool_choice should force lookup_order on every turn.'],
+    a: [1],
+    e: 'Keyword-sensitive system prompt instructions can override well-written tool descriptions. Since the descriptions are already good, review the system prompt wording first.' },
+
+  { s: 'CS', d: 2, t: '2.2', h: 0,
+    q: 'During a database outage, lookup_order caught the timeout and returned an empty list. The agent told several customers "You have no orders on file." What should change?',
+    o: ['The agent should double-check every empty result by calling the tool a second time, and only tell the customer when both calls return the same empty list.',
+        'The tool should return a placeholder order so that the agent has something to work with.',
+        'The system prompt should warn the agent that empty results may sometimes be wrong.',
+        'The tool should report the timeout as an error (isError, transient, retryable), distinct from a successful query with no matches.'],
+    a: [3],
+    e: 'An access failure and a valid empty result are different things. Returning failure as an empty success hides the problem; a structured error lets the agent decide to retry or explain the outage.' },
+
+  { s: 'CS', d: 2, t: '2.3', h: 0,
+    q: 'On the first request of every conversation, the agent must call get_customer before doing anything else. On later turns the model should choose freely. Which configuration achieves this?',
+    o: ['tool_choice: "any" on every request.',
+        'tool_choice: {"type": "tool", "name": "get_customer"} on the first request, then "auto" on the following ones.',
+        'tool_choice: "auto" on every request, with an instruction to start with get_customer.',
+        'Provide only get_customer as a tool for the whole conversation.'],
+    a: [1],
+    e: 'Forced tool selection guarantees a specific tool is called. "any" guarantees some tool, not which one; "auto" with an instruction is probabilistic.' },
+
+  { s: 'CS', d: 5, t: '5.1', h: 0,
+    q: 'Each lookup_order call returns more than 40 fields; a return request needs about five of them. After several lookups the context is mostly order data and the agent starts missing earlier details. What is the best approach?',
+    o: ['Trim each tool result to the fields relevant to the task before it enters the conversation.',
+        'Instruct the agent to ignore the fields it does not need for the current request.',
+        'Limit the agent to a single order lookup per conversation.',
+        'Summarize the whole conversation after every tool call.'],
+    a: [0],
+    e: 'Tool results accumulate and consume tokens out of proportion to their relevance. Trim verbose outputs to the relevant fields before they accumulate; telling the model to ignore fields does not free any context.' },
+
+  { s: 'CS', d: 5, t: '5.2', h: 1,
+    q: 'A customer asks you to match a competitor’s lower price. Your policy document only covers price adjustments for price drops on your own site. What should the agent do?',
+    o: ['Approve the match, since the policy does not forbid it.',
+        'Decline the match, since the policy does not explicitly allow it.',
+        'Escalate: the policy is silent on this request, so it is a policy gap.',
+        'Apply the own-site adjustment rule, as it is the closest existing policy and gives the customer a fast answer.'],
+    a: [2],
+    e: 'Policy exceptions and gaps are a valid escalation trigger. When the policy is ambiguous or silent on the specific request, the agent should escalate rather than improvise in either direction.' },
+
+  { s: 'CS', d: 5, t: '5.2', h: 0,
+    q: 'get_customer returns three accounts for "Maria Silva". What should the agent do?',
+    o: ['Use the account with the most recent order, as it is the most likely one.',
+        'Use the first result, since the tool returns the best match first.',
+        'Apply the requested action to all three accounts to be safe.',
+        'Ask the customer for an additional identifier, such as email or order number.'],
+    a: [3],
+    e: 'Multiple matches require clarification by requesting additional identifiers, not heuristic selection.' },
+
+  { s: 'CS', d: 5, t: '5.2', h: 1,
+    q: 'A customer writes: "This is the third time I am asking. Your service is terrible. My tracking number still does not work." They have not asked for a human. Resending a tracking link is within the agent’s capability. What is the best response?',
+    o: ['Escalate immediately, because strong negative sentiment and repeated contacts indicate a complex case that the agent should not handle.',
+        'Acknowledge the frustration and offer to resolve it now; escalate if the customer then says they prefer a human.',
+        'Resolve the issue without commenting on the customer’s tone.',
+        'Ask the customer to rate their frustration so the case can be routed correctly.'],
+    a: [1],
+    e: 'Sentiment is an unreliable proxy for complexity. When the issue is within capability and no human was requested, acknowledge the frustration and offer resolution, escalating only if the customer reiterates a preference for a human.' },
+
+  // ---------- Multi-Agent Research ----------
+  { s: 'MR', d: 1, t: '1.2', h: 0,
+    q: 'A user asks the research system: "In what year was the Berne Convention signed?" The coordinator runs the full pipeline (web search, document analysis, synthesis, report generation) and takes four minutes. What should change?',
+    o: ['The coordinator should assess each query and invoke only the subagents it requires.',
+        'All four subagents should run in parallel for every query, whatever its complexity, so that total time is bounded by the slowest one.',
+        'Each subagent should be given a lower max_tokens so it finishes sooner.',
+        'The report generator should be merged into the synthesis agent to remove one step.'],
+    a: [0],
+    e: 'A coordinator should analyze the query and dynamically select which subagents to invoke, rather than always routing through the full pipeline.' },
+
+  { s: 'MR', d: 1, t: '1.2', h: 1,
+    q: 'To cut latency, a developer let the search subagent send its results straight to the analysis subagent, bypassing the coordinator. Since then, failures are handled differently on each path and it is hard to trace which information reached which agent. What is the best correction?',
+    o: ['Add detailed logging inside each of the subagents.',
+        'Give both subagents a shared memory store they can read and write.',
+        'Have each subagent retry the other one when a handoff fails.',
+        'Route all inter-subagent communication through the coordinator.'],
+    a: [3],
+    e: 'In hub-and-spoke architecture the coordinator manages all inter-subagent communication, which gives observability, consistent error handling and controlled information flow. Logging or shared memory treat symptoms.' },
+
+  { s: 'MR', d: 1, t: '1.2', h: 0,
+    q: 'Decomposition is good and all subagents succeed, but reports are thin on two of six subtopics because the first round of searches found few sources for them. Which design improves this?',
+    o: ['Instruct the synthesis agent to fill thin sections from its own knowledge and to mark those passages as background rather than as sourced findings.',
+        'Double the number of results returned by every search, for all subtopics.',
+        'Have the coordinator review the synthesis for gaps, re-delegate targeted searches for them, and re-run synthesis until coverage is sufficient.',
+        'Run the complete pipeline twice and merge the two resulting reports.'],
+    a: [2],
+    e: 'This is the iterative refinement loop: the coordinator evaluates synthesis output for gaps, re-delegates with targeted queries, and re-invokes synthesis. Filling from the model’s own knowledge breaks sourcing.' },
+
+  { s: 'MR', d: 1, t: '1.2', h: 0,
+    q: 'Two search subagents are both given the task "research renewable energy adoption in Europe". They return largely the same sources. How should the coordinator delegate instead?',
+    o: ['Give each subagent a different temperature so that their results diverge.',
+        'Assign each subagent a distinct subtopic or source type.',
+        'Run one after the other and pass the first one’s output to the second.',
+        'Keep a single subagent and double its max_tokens.'],
+    a: [1],
+    e: 'Partition the research scope across subagents (distinct subtopics or source types) to minimize duplication.' },
+
+  { s: 'MR', d: 1, t: '1.3', h: 0,
+    q: 'The coordinator’s prompts to subagents are procedural: "1. Search for X. 2. Open the first three results. 3. Copy the statistics." Subagents fail when the first results are irrelevant. How should the prompts be written?',
+    o: ['With additional steps that cover every failure that could happen.',
+        'With the same steps, written in capital letters for emphasis.',
+        'As a single keyword list, without any other instructions.',
+        'As research goals and quality criteria, leaving the approach to the subagent.'],
+    a: [3],
+    e: 'Coordinator prompts should specify goals and quality criteria rather than step-by-step procedures, so subagents can adapt to what they find.' },
+
+  { s: 'MR', d: 1, t: '1.3', h: 1,
+    q: 'The coordinator passes search findings to the synthesis subagent as one block of prose. The final report makes correct claims but cannot say which source each one came from. What is the best fix?',
+    o: ['Pass findings in a structured format that keeps each claim together with its source URL, document name, and page.',
+        'Give the synthesis subagent web search so it can look the sources up again and attach the right one to each claim before writing the report.',
+        'Ask the synthesis subagent to add citations wherever it believes they belong.',
+        'Shorten the findings so that the sources become easier to notice.'],
+    a: [0],
+    e: 'Use structured data formats that separate content from metadata when passing context between agents, so attribution survives. Asking the model to reconstruct citations invites fabricated ones.' },
+
+  { s: 'MR', d: 1, t: '1.6', h: 0,
+    q: 'Which task is the better fit for dynamic, adaptive decomposition rather than a fixed prompt chain?',
+    o: ['Reviewing each pull request for the same four aspects (security, performance, style, tests), with one focused pass for each of them.',
+        'Translating a document and then formatting the translation.',
+        'Investigating why adoption of a product dropped in one region, where each finding determines what to look at next.',
+        'Extracting the same ten fields from every incoming invoice.'],
+    a: [2],
+    e: 'Prompt chaining fits predictable, multi-aspect work with known steps. Open-ended investigation, where subtasks depend on what is discovered, calls for adaptive decomposition.' },
+
+  { s: 'MR', d: 2, t: '2.2', h: 0,
+    q: 'The search subagent hits occasional rate-limit errors. Each one is propagated to the coordinator, which stops and replans. Most of these calls succeed on a second attempt. What is the better design?',
+    o: ['The subagent returns an empty result so that the coordinator can continue.',
+        'The subagent retries transient failures locally and propagates only what it cannot resolve, with what was attempted and any partial results.',
+        'The coordinator terminates the workflow on the first error to avoid inconsistent reports.',
+        'The coordinator switches to a different subagent whenever any error occurs, and re-plans the remaining work around the subagent that failed for the rest of the run.'],
+    a: [1],
+    e: 'Subagents should implement local recovery for transient failures and propagate only unresolved errors, together with partial results and what was attempted. Empty-as-success and terminate-on-first-error are both anti-patterns.' },
+
+  { s: 'MR', d: 2, t: '2.1', h: 0,
+    q: 'The analysis subagent has one generic analyze_document tool, used for extracting data points, summarizing, and checking claims. Outputs vary in shape and the agent often uses it for the wrong purpose. What is the best redesign?',
+    o: ['Add a free-text "mode" parameter to the existing tool.',
+        'Keep the tool as it is and write a much longer description.',
+        'Remove the tool and have the agent analyze documents in plain text.',
+        'Split it into purpose-specific tools (e.g., extract_data_points, summarize_content, verify_claim_against_source), each with a defined input/output contract.'],
+    a: [3],
+    e: 'Splitting a generic tool into purpose-specific tools with defined input/output contracts removes ambiguity about when and how to use each.' },
+
+  { s: 'MR', d: 5, t: '5.3', h: 0,
+    q: 'One of four sources was unavailable during research. The other three were analyzed. How should the synthesis output handle this?',
+    o: ['Present the report normally; three sources are enough for a reliable result.',
+        'Abort and return an error instead of a report.',
+        'Annotate coverage: mark which findings are well supported and which topic areas have gaps due to the unavailable source.',
+        'Fill the missing area with general background so that the report looks complete, without drawing attention to the source that failed.'],
+    a: [2],
+    e: 'Synthesis output should carry coverage annotations distinguishing well-supported findings from gaps caused by unavailable sources. Hiding the gap or aborting the whole workflow are both wrong.' },
+
+  { s: 'MR', d: 5, t: '5.6', h: 1,
+    q: 'Two credible sources report different market-size figures. One was published in 2023, the other in 2025. Which TWO practices should the system follow?',
+    o: ['Report the average of the two figures.',
+        'Keep both figures, each attributed to its source.',
+        'Use the newer figure and discard the older one without mention.',
+        'Require publication or data-collection dates in subagent outputs, so a difference in time is not mistaken for a contradiction.',
+        'Omit the statistic, since the sources disagree.'],
+    a: [1, 3],
+    e: 'Conflicting values should be preserved and annotated with source attribution, not resolved arbitrarily. Requiring dates in structured outputs prevents temporal differences from being read as contradictions.' },
+
+  { s: 'MR', d: 5, t: '5.1', h: 0,
+    q: 'The synthesis agent receives twelve subagent reports concatenated together. Findings from reports 5 to 8 are regularly missing from the final output. What is the most effective mitigation?',
+    o: ['Put a summary of key findings at the start of the input and organize the detail under explicit section headers.',
+        'Sort the reports alphabetically by the name of the subagent that wrote them.',
+        'Include every report twice in the input, so each one is seen more often.',
+        'Tell the synthesis agent to read all of the reports carefully.'],
+    a: [0],
+    e: 'This is the "lost in the middle" effect. Mitigate it by placing key findings at the beginning and structuring detailed results with explicit section headers.' },
+
+  // ---------- Developer Productivity ----------
+  { s: 'DP', d: 1, t: '1.7', h: 1,
+    q: 'Yesterday you finished a long analysis of a codebase in a named session. Overnight a teammate refactored three of the files; the rest is unchanged and your analysis of it is still valid. What is the best way to continue?',
+    o: ['Resume the session and carry on; the agent will notice the changes by itself.',
+        'Start a new session and re-explore the whole codebase from scratch, since any of the earlier tool results might now be out of date.',
+        'Fork the session so that the old analysis stays untouched.',
+        'Resume the session by name and tell the agent which files changed, so it re-analyzes only those.'],
+    a: [3],
+    e: 'When prior context is mostly valid, resume with --resume and inform the agent about the specific file changes for targeted re-analysis. Resuming silently leaves it reasoning from stale tool results.' },
+
+  { s: 'DP', d: 1, t: '1.7', h: 0,
+    q: 'After a complete analysis of a module, you want to try two different refactoring strategies and compare them, without repeating the analysis and without one attempt influencing the other. What should you use?',
+    o: ['--resume twice in a row on the same session.',
+        'fork_session, to create two independent branches from the shared analysis.',
+        '/compact before each of the two attempts.',
+        'A single session in which you ask for both strategies in one message.'],
+    a: [1],
+    e: 'fork_session creates independent branches from a shared analysis baseline, which is exactly the case of comparing divergent approaches.' },
+
+  { s: 'DP', d: 1, t: '1.6', h: 0,
+    q: 'You ask the agent to "add comprehensive tests to this legacy codebase." What is the best way for it to start?',
+    o: ['Write tests file by file, going through the repository in alphabetical order.',
+        'Generate tests for the whole codebase in a single response.',
+        'Map the structure, identify high-impact areas, and build a prioritized plan that adapts as dependencies are discovered.',
+        'Ask the user to list every function that needs a test, with the expected inputs and outputs, before doing anything else in the repository.'],
+    a: [2],
+    e: 'Open-ended tasks are decomposed by first mapping the structure, identifying high-impact areas, then creating a prioritized plan that adapts as it learns more.' },
+
+  { s: 'DP', d: 2, t: '2.4', h: 0,
+    q: 'Your agent spends many tool calls just finding out what exists: which documentation sections, which database tables, which open issues. What reduces this exploratory overhead?',
+    o: ['Expose those catalogs (documentation hierarchy, database schemas, issue summaries) as MCP resources.',
+        'Add several more search tools so that discovery becomes faster.',
+        'Raise the limit of tool calls the agent may make per turn.',
+        'Force a list_everything tool call at the start of every turn.'],
+    a: [0],
+    e: 'MCP resources expose content catalogs so the agent can see what data is available without exploratory tool calls.' },
+
+  { s: 'DP', d: 2, t: '2.4', h: 0,
+    q: 'Your team needs Claude Code to read and update Jira tickets. It also has an in-house release-approval workflow with no public tooling. What is the sensible approach?',
+    o: ['Build custom MCP servers for both, for the sake of consistency.',
+        'Use community servers for both, adapting the in-house release workflow to whatever the closest available server happens to support.',
+        'Avoid MCP and paste the ticket contents into the prompt when needed.',
+        'Use an existing community MCP server for Jira and build a custom server only for the in-house workflow.'],
+    a: [3],
+    e: 'Prefer existing community MCP servers for standard integrations and reserve custom servers for team-specific workflows.' },
+
+  { s: 'DP', d: 2, t: '2.5', h: 0,
+    q: 'You need to (1) list every file named like *.migration.sql anywhere in the repository and (2) find every place where legacyAuth( is called. Which built-in tools fit?',
+    o: ['Grep for (1), Glob for (2).',
+        'Glob for (1), Grep for (2).',
+        'Read for both tasks.',
+        'Bash with a custom script for both tasks.'],
+    a: [1],
+    e: 'Glob matches file paths by name pattern; Grep searches file contents for a pattern.' },
+
+  { s: 'DP', d: 2, t: '2.5', h: 0,
+    q: 'An Edit call fails because the text to replace appears several times in the file and no unique anchor can be found. What is the reliable fallback?',
+    o: ['Retry the same Edit call until it succeeds.',
+        'Use Grep to replace the text in the file.',
+        'Read the full file, then Write the complete modified contents.',
+        'Use Glob to locate a different file to edit instead.'],
+    a: [2],
+    e: 'Edit depends on unique text matching. When no unique anchor exists, Read followed by Write is the reliable fallback. Grep and Glob only search.' },
+
+  { s: 'DP', d: 2, t: '2.5', h: 1,
+    q: 'You must understand how refunds flow through an unfamiliar codebase of 2,000 files. Which approach is most effective?',
+    o: ['Read every file under src/ first, so that nothing is missed and the agent has the complete picture before answering any question.',
+        'Ask the agent to describe how refund systems are typically built.',
+        'Glob all files and Read them in batches of fifty.',
+        'Grep for entry points (e.g., "refund"), then Read those files and follow imports to trace the flow.'],
+    a: [3],
+    e: 'Build understanding incrementally: Grep to find entry points, then Read to follow imports and trace flows, rather than reading everything upfront and exhausting context.' },
+
+  { s: 'DP', d: 5, t: '5.4', h: 0,
+    q: 'Two hours into exploring a large codebase, the agent begins giving answers that contradict earlier ones and refers to "typical patterns" instead of the specific classes it found. Which practice counteracts this?',
+    o: ['Have the agent record key findings in a scratchpad file and consult it for later questions.',
+        'Ask each question twice and compare the two answers.',
+        'Paste all of the earlier answers back into every new message.',
+        'Raise the temperature to obtain more specific answers.'],
+    a: [0],
+    e: 'These are signs of context degradation in an extended session. Scratchpad files persist key findings across context boundaries (subagent delegation and /compact also help).' },
+
+  // ---------- Code Generation with Claude Code ----------
+  { s: 'CG', d: 3, t: '3.1', h: 0,
+    q: 'In a monorepo, the root CLAUDE.md has grown to 900 lines covering every team’s standards. Each package only needs some of them, and the package maintainers know which. What is the best structure?',
+    o: ['Copy the full root file into every package directory.',
+        'Keep the single file and add a table of contents at the top.',
+        'Move everything into each developer’s ~/.claude/CLAUDE.md, so that every developer keeps only the parts relevant to their package.',
+        'Give each package a CLAUDE.md that uses @import to include only the relevant standards files.'],
+    a: [3],
+    e: '@import keeps CLAUDE.md modular: each package imports only the standards files relevant to it. User-level files are not shared through version control.' },
+
+  { s: 'CG', d: 3, t: '3.1', h: 0,
+    q: 'Claude Code follows a naming convention on one developer’s machine but not on another’s, in the same repository and branch. What is the best first diagnostic step?',
+    o: ['Reinstall Claude Code on the second machine.',
+        'Run /memory on both machines to see which memory files are loaded.',
+        'Run /compact on the second machine.',
+        'Add the naming convention to .mcp.json.'],
+    a: [1],
+    e: '/memory shows which memory files are loaded. The likely cause is that the convention lives in one developer’s user-level CLAUDE.md instead of the project.' },
+
+  { s: 'CG', d: 3, t: '3.2', h: 0,
+    q: 'A project skill needs a ticket ID. Developers often invoke it with no argument and get a confusing result. Which frontmatter option addresses this?',
+    o: ['context: fork', 'allowed-tools', 'argument-hint', 'paths'],
+    a: [2],
+    e: 'argument-hint prompts developers for the required parameters when they invoke the skill without arguments.' },
+
+  { s: 'CG', d: 3, t: '3.2', h: 1,
+    q: 'For which TWO skills is context: fork most appropriate?',
+    o: ['A codebase-analysis skill that reads dozens of files and reports a short summary.',
+        'A skill whose detailed intermediate output you want to keep referring to in the following turns.',
+        'A skill that formats a one-line commit message.',
+        'A brainstorming skill that explores many alternative designs before recommending one.',
+        'A skill that sets conventions the main conversation must keep applying afterwards.'],
+    a: [0, 3],
+    e: 'context: fork isolates skills that produce verbose output (codebase analysis) or exploratory context (brainstorming) from the main session. If you need the detail or the instructions to remain in the main conversation, forking works against you.' },
+
+  { s: 'CG', d: 3, t: '3.3', h: 0,
+    q: 'A file .claude/rules/infra.md holds Terraform conventions and has no frontmatter. Frontend developers notice these rules are in context even when they edit only React components. What is the fix?',
+    o: ['Move the file to ~/.claude/rules/ on the machines of the infrastructure team.',
+        'Add YAML frontmatter with paths: ["terraform/**/*"] so it loads only for matching files.',
+        'Rename the file to terraform.md.',
+        'Convert the rules into a skill that uses context: fork.'],
+    a: [1],
+    e: 'Path-scoped rules load only when editing matching files, which reduces irrelevant context and token usage. Without paths, the rule always loads.' },
+
+  { s: 'CG', d: 3, t: '3.4', h: 1,
+    q: 'You must migrate a date library that is used in more than 45 files. Usage patterns differ between modules. Which workflow is most appropriate?',
+    o: ['Direct execution from the start, fixing each file as errors appear.',
+        'Plan mode for the entire task, including making the edits.',
+        'Plan mode to investigate usage and design the approach, then direct execution to implement the approved plan.',
+        'One new session per file, each in direct execution, so that no session ever has to hold more than a single file in its context window.'],
+    a: [2],
+    e: 'Combine the modes: plan mode for investigation and design of a large multi-file change, then direct execution to implement the planned approach.' },
+
+  { s: 'CG', d: 3, t: '3.4', h: 0,
+    q: 'A multi-phase task begins with a discovery phase that produces large amounts of search output. By the time implementation starts, the context window is nearly full. What helps most?',
+    o: ['Use the Explore subagent for discovery, so that only a summary returns to the main conversation.',
+        'Skip the discovery phase and begin implementing right away.',
+        'Paste the discovery output into CLAUDE.md so it is always available.',
+        'Run discovery twice to confirm that the results are stable.'],
+    a: [0],
+    e: 'The Explore subagent isolates verbose discovery output and returns summaries, preserving the main conversation’s context.' },
+
+  { s: 'CG', d: 3, t: '3.5', h: 0,
+    q: 'You are about to implement caching in a domain you do not know well and suspect there are considerations you have not thought of (invalidation, failure modes). Which technique fits best before implementation?',
+    o: ['Provide two or three input/output examples of the expected behavior.',
+        'Write the code first and review it afterwards.',
+        'Run Claude Code with --output-format json.',
+        'Have Claude interview you: ask it to pose questions that surface design considerations.'],
+    a: [3],
+    e: 'The interview pattern has Claude ask questions to surface considerations the developer may not have anticipated, which is most useful in unfamiliar domains.' },
+
+  { s: 'CG', d: 3, t: '3.5', h: 1,
+    q: 'Generated code has three problems. Fixing A changes how B must be fixed. C is unrelated to both. How should you give feedback?',
+    o: ['Three separate messages, one for each problem.',
+        'A and B together in one detailed message; C on its own.',
+        'All three in one short message, without detail.',
+        'Only A; the others will probably resolve themselves.'],
+    a: [1],
+    e: 'Interacting issues should be addressed together in a single detailed message; independent issues can be fixed sequentially.' },
+
+  // ---------- Claude Code for CI ----------
+  { s: 'CI', d: 3, t: '3.6', h: 0,
+    q: 'Your CI review re-runs on every new commit to a pull request and posts the same comments again each time. What is the best fix?',
+    o: ['Run the review only on the first commit of each pull request.',
+        'Delete all earlier comments before each new run, so that the pull request only ever shows the output of the most recent review.',
+        'Include the prior findings in context and instruct Claude to report only new or still-unaddressed issues.',
+        'Lower the number of findings allowed per run.'],
+    a: [2],
+    e: 'Include prior review findings in context when re-running after new commits, and ask only for new or still-unaddressed issues.' },
+
+  { s: 'CI', d: 3, t: '3.6', h: 0,
+    q: 'CI-generated tests frequently repeat scenarios that the suite already covers. What is the most direct improvement?',
+    o: ['Provide the existing test files in context when generating tests.',
+        'Ask for a smaller number of tests in each run.',
+        'Generate the tests twice and keep only the differences.',
+        'Send test generation through the Message Batches API.'],
+    a: [0],
+    e: 'Providing existing test files in context lets test generation avoid suggesting scenarios that are already covered.' },
+
+  { s: 'CI', d: 3, t: '3.6', h: 1,
+    q: 'In your pipeline, the same Claude session writes a change and then reviews it. The review rarely finds anything, yet human reviewers find real bugs. What is the most effective change?',
+    o: ['Add "review your work critically, as if someone else had written it" to the review prompt of that same session.',
+        'Enable extended thinking for the review step.',
+        'Ask the same session to perform the review twice.',
+        'Run the review in an independent instance that does not have the generator’s reasoning context.'],
+    a: [3],
+    e: 'A session retains its reasoning context from generation, so it is less likely to question its own decisions. An independent review instance is more effective than self-review instructions or extended thinking.' },
+
+  { s: 'CI', d: 2, t: '2.4', h: 0,
+    q: 'Which TWO statements about MCP server configuration in Claude Code are correct?',
+    o: ['Servers in ~/.claude.json are shared with teammates through version control.',
+        '${GITHUB_TOKEN} in .mcp.json is expanded from the environment, so the secret is not committed.',
+        'Only one MCP server can be active in a session.',
+        'Tools from all configured servers are discovered at connection time and available together.',
+        'A project-level server hides any user-level server.'],
+    a: [1, 3],
+    e: '.mcp.json is project-scoped and supports environment variable expansion for credentials; ~/.claude.json is user-scoped and personal. Tools from all configured servers are available simultaneously.' },
+
+  { s: 'CI', d: 4, t: '4.1', h: 0,
+    q: 'The review prompt says "check that comments are accurate." It flags dozens of comments that are merely vague or old-fashioned in style. Which instruction improves precision most?',
+    o: ['"Be conservative when flagging comments."',
+        '"Flag a comment only when the behavior it claims contradicts what the code actually does."',
+        '"Only report findings you are highly confident about."',
+        '"Check the comments very carefully."'],
+    a: [1],
+    e: 'Explicit criteria beat vague instructions. General instructions such as "be conservative" or "only high-confidence findings" do not improve precision the way a specific categorical criterion does.' },
+
+  { s: 'CI', d: 4, t: '4.1', h: 1,
+    q: 'One review category (naming style) is wrong about 60% of the time. Developers have started dismissing all findings, including the accurate security ones. What is the best immediate action?',
+    o: ['Add "only report high-confidence findings" to the prompt.',
+        'Mark security findings as blocking so that they cannot be dismissed, and leave the other categories as they are.',
+        'Temporarily disable the naming-style category while its prompt is improved.',
+        'Require a written justification for every dismissed finding.'],
+    a: [2],
+    e: 'High false-positive categories undermine trust in the accurate ones. Temporarily disabling the noisy category restores trust while you improve its prompt.' },
+
+  { s: 'CI', d: 4, t: '4.1', h: 0,
+    q: 'The same kind of issue is labeled "critical" in one review and "minor" in the next. What produces consistent severity classification?',
+    o: ['Explicit criteria for each severity level, with a concrete code example of each.',
+        'Asking the model to rate severity on a scale from 1 to 10.',
+        'Running the review three times and averaging the severities.',
+        'Removing severity from the output altogether.'],
+    a: [0],
+    e: 'Define explicit severity criteria with concrete code examples for each level to achieve consistent classification.' },
+
+  { s: 'CI', d: 4, t: '4.2', h: 0,
+    q: 'Despite detailed formatting instructions, review findings come back in different shapes: sometimes a paragraph, sometimes a list, sometimes without a suggested fix. What is the most effective technique?',
+    o: ['Repeat the formatting instructions again at the end of the prompt.',
+        'Lower max_tokens so that the answers stay compact.',
+        'Ask for "consistent formatting" in the prompt.',
+        'Add few-shot examples showing the exact format: location, issue, severity, suggested fix.'],
+    a: [3],
+    e: 'Few-shot examples are the most effective technique for consistently formatted output when detailed instructions alone give inconsistent results.' },
+
+  { s: 'CI', d: 4, t: '4.2', h: 1,
+    q: 'You want few-shot examples that reduce false positives yet still let the model judge code patterns it has not seen. Which set is best?',
+    o: ['Thirty examples that list every pattern known to be acceptable, so that the model can match new code against the complete list.',
+        'Two to four examples of ambiguous cases, each showing the reasoning for why it is acceptable or a real issue.',
+        'Examples of obvious bugs only, since those are the important ones.',
+        'Examples with the verdict only, without reasoning, to save tokens.'],
+    a: [1],
+    e: 'A small set of targeted examples for ambiguous cases, with the reasoning shown, lets the model generalize its judgment to novel patterns instead of matching a list of pre-specified cases.' },
+
+  { s: 'CI', d: 4, t: '4.4', h: 0,
+    q: 'Developers dismiss many findings. You want to learn which code constructs trigger the dismissed ones, so you can improve the prompt systematically. What should you add?',
+    o: ['A confidence score from 1 to 10 on each finding.',
+        'A longer explanation inside each finding.',
+        'A detected_pattern field in each structured finding.',
+        'A second review pass that deletes low-value findings.'],
+    a: [2],
+    e: 'A detected_pattern field records which construct triggered each finding, enabling systematic analysis of dismissal patterns.' },
+
+  // ---------- Structured Data Extraction ----------
+  { s: 'EX', d: 4, t: '4.3', h: 1,
+    q: 'Extraction uses a tool with a strict JSON schema, so every output is valid. Still, in some invoices the line items do not add up to the total. What explains this, and what addresses it?',
+    o: ['The schema is not strict enough; marking every numeric field as required and adding minimum and maximum constraints would force the amounts to be consistent with each other.',
+        'Tool use is unreliable for numbers; free-text output should be used instead.',
+        'tool_choice should be "auto", so the model can explain the discrepancies.',
+        'Schemas prevent syntax errors, not semantic ones; add validation such as extracting calculated_total alongside stated_total and flagging mismatches.'],
+    a: [3],
+    e: 'Strict schemas via tool use eliminate syntax errors but not semantic errors. Semantic checks (calculated_total versus stated_total, conflict flags) must be designed into the validation flow.' },
+
+  { s: 'EX', d: 4, t: '4.3', h: 0,
+    q: 'document_type is an enum of five values. New kinds of documents keep appearing and the model forces them into the nearest existing value. What schema change handles this best?',
+    o: ['Add an "other" value together with a detail string field.',
+        'Change the field to a free-text string.',
+        'Mark the field as required.',
+        'Remove the field from the schema.'],
+    a: [0],
+    e: 'The "other" plus detail string pattern keeps the enum useful for known categories while staying extensible for new ones. Free text loses the categorization.' },
+
+  { s: 'EX', d: 4, t: '4.5', h: 1,
+    q: 'Documents must be processed within 30 hours of arrival. You use the Message Batches API, whose processing can take up to 24 hours. How often should you submit batches to guarantee the SLA?',
+    o: ['Once every 24 hours.',
+        'Every 4 hours.',
+        'Every 12 hours.',
+        'Once a week, to maximize the savings.'],
+    a: [1],
+    e: 'Worst case = time waiting for the next submission window + 24 hours of processing. To stay within 30 hours the window must be 6 hours or less; 4-hour windows give a 28-hour worst case.' },
+
+  { s: 'EX', d: 4, t: '4.5', h: 0,
+    q: 'You are about to send 50,000 documents through the Batch API with a new extraction prompt. What should you do first?',
+    o: ['Submit everything and resubmit whatever fails.',
+        'Split the job into 50 batches of 1,000 documents.',
+        'Refine the prompt on a sample set to maximize first-pass success.',
+        'Process all of the documents synchronously instead.'],
+    a: [2],
+    e: 'Refining the prompt on a sample set before a large batch maximizes first-pass success and reduces iterative resubmission costs.' },
+
+  { s: 'EX', d: 4, t: '4.5', h: 0,
+    q: 'Which TWO workloads are appropriate for the Message Batches API?',
+    o: ['A pre-merge check that developers wait on.',
+        'A nightly report that is reviewed the next morning.',
+        'A live support chat.',
+        'A weekly audit of processed documents.',
+        'A request that must run tools and receive their results within the same request.'],
+    a: [1, 3],
+    e: 'Batch processing suits non-blocking, latency-tolerant workloads. It has no latency SLA (up to 24 hours) and does not support multi-turn tool calling within a single request.' },
+
+  { s: 'EX', d: 4, t: '4.2', h: 0,
+    q: 'Some documents state the payment terms in a table, others inside a narrative paragraph. For the narrative ones the model returns null even though the information is present. What is the best fix?',
+    o: ['Mark payment_terms as a required field.',
+        'Raise max_tokens for the extraction request.',
+        'Retry with the same prompt until a value is returned, up to a fixed number of attempts per document.',
+        'Add few-shot examples showing correct extraction from each document format.'],
+    a: [3],
+    e: 'Few-shot examples demonstrating extraction from varied document structures address empty or null extraction of fields that are present. Making the field required invites fabrication when the value really is absent.' },
+
+  { s: 'EX', d: 5, t: '5.5', h: 1,
+    q: 'Extraction accuracy is 97% overall and the team wants to stop human review of high-confidence results. Which TWO steps should come first?',
+    o: ['Break accuracy down by document type and by field, to check that no segment performs poorly.',
+        'Raise the confidence threshold by a few points and proceed.',
+        'Keep reviewing a stratified random sample of high-confidence extractions, to measure error rate and catch new error patterns.',
+        'Stop review for a month and compare complaint volumes.',
+        'Ask the model whether it thinks its extractions are accurate.'],
+    a: [0, 2],
+    e: 'Aggregate accuracy can mask poor performance on specific document types or fields, so validate by segment before reducing review. Stratified random sampling of high-confidence extractions keeps measuring error rates and detects novel patterns.' }
+];
+</script>
+
+<script>
+(function () {
+  var KEY = 'ccarf-simulado-v1', LIMIT = 120 * 60, LET = 'ABCDE';
+  var state = { answers: {}, flags: {}, start: null, end: null, done: false };
+  try { var saved = JSON.parse(localStorage.getItem(KEY)); if (saved && saved.answers) state = saved; } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  var app = $('app'), list = $('list'), grid = $('grid'), cards = [], cells = [];
+  var NUM = ['', 'ONE', 'TWO', 'THREE'];
+
+  // Build
+  var last = null;
+  Q.forEach(function (item, i) {
+    if (item.s !== last) {
+      last = item.s;
+      var sc = el('div', 'card scenario');
+      sc.appendChild(el('h2', null, 'Scenario: ' + SCEN[item.s].name));
+      sc.appendChild(el('p', null, SCEN[item.s].desc));
+      list.appendChild(sc);
+    }
+    var card = el('div', 'card'); card.id = 'q' + (i + 1);
+    var label = el('div', 'label');
+    label.appendChild(el('span', null, 'Exercício ' + (i + 1)));
+    if (item.a.length > 1) label.appendChild(el('span', 'tag multi', 'Select ' + NUM[item.a.length]));
+    var fb = el('button', 'flagbtn', 'Revisar depois');
+    fb.onclick = function () { if (state.flags[i]) delete state.flags[i]; else state.flags[i] = 1; save(); paint(); };
+    label.appendChild(fb);
+    card.appendChild(label);
+    card.appendChild(el('div', 'q', '[' + SCEN[item.s].tag + '] ' + item.q));
+    item.o.forEach(function (text, k) {
+      var b = el('button', 'opt');
+      b.appendChild(el('span', 'let', LET[k]));
+      b.appendChild(el('span', null, text));
+      b.onclick = function () { pick(i, k); };
+      card.appendChild(b);
+    });
+    var ex = el('div', 'expl');
+    ex.appendChild(el('b', null, 'Domain ' + item.d + ' · Task ' + item.t + (item.h ? ' · harder' : '') + '. '));
+    ex.appendChild(document.createTextNode('Correct: ' + item.a.map(function (k) { return LET[k]; }).join(', ') + '. ' + item.e));
+    card.appendChild(ex);
+    list.appendChild(card); cards.push(card);
+
+    var c = el('a', null, String(i + 1)); c.href = '#q' + (i + 1);
+    c.onclick = function (ev) { ev.preventDefault(); card.scrollIntoView({ block: 'start' }); };
+    grid.appendChild(c); cells.push(c);
+  });
+
+  function pick(i, k) {
+    if (state.done) return;
+    if (!state.start) state.start = Date.now();
+    var cur = (state.answers[i] || []).slice(), n = Q[i].a.length, at = cur.indexOf(k);
+    if (n === 1) cur = at >= 0 ? [] : [k];
+    else if (at >= 0) cur.splice(at, 1);
+    else { cur.push(k); if (cur.length > n) cur.shift(); }
+    if (cur.length) state.answers[i] = cur; else delete state.answers[i];
+    save(); paint();
+  }
+
+  function isRight(i) {
+    var a = (state.answers[i] || []).slice().sort().join(','), b = Q[i].a.slice().sort().join(',');
+    return a === b;
+  }
+  function answered() { return Object.keys(state.answers).length; }
+
+  function paint() {
+    app.classList.toggle('done', state.done);
+    Q.forEach(function (item, i) {
+      var sel = state.answers[i] || [], card = cards[i], cell = cells[i];
+      card.classList.toggle('is-flagged', !!state.flags[i]);
+      card.classList.toggle('q-right', state.done && isRight(i));
+      card.classList.toggle('q-wrong', state.done && !isRight(i));
+      Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (b, k) {
+        var chosen = sel.indexOf(k) >= 0, good = item.a.indexOf(k) >= 0;
+        b.className = 'opt' + (chosen ? ' sel' : '') + (state.done && good ? ' correct' : '') + (state.done && chosen && !good ? ' incorrect' : '');
+      });
+      cell.className = state.done ? (isRight(i) ? 'right' : 'wrong') : ((sel.length ? 'answered' : '') + (state.flags[i] ? ' flagged' : ''));
+    });
+    $('count').innerHTML = 'Respondidas <b>' + answered() + '/' + Q.length + '</b>';
+    $('finish').hidden = state.done;
+    if (state.done) results();
+    tick();
+  }
+
+  function fmt(sec) { var m = Math.floor(Math.abs(sec) / 60), s = Math.abs(sec) % 60; return (sec < 0 ? '-' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+  function elapsed() { return state.start ? Math.floor(((state.end || Date.now()) - state.start) / 1000) : 0; }
+  function tick() {
+    var left = LIMIT - elapsed(), t = $('timer');
+    t.innerHTML = (state.done ? 'Tempo usado <b>' + fmt(elapsed()) : 'Tempo <b>' + fmt(left)) + '</b>';
+    t.classList.toggle('late', !state.done && left < 0);
+  }
+  setInterval(function () { if (!state.done) tick(); }, 1000);
+
+  function tally(keyOf) {
+    var out = {};
+    Q.forEach(function (item, i) { var k = keyOf(item); out[k] = out[k] || { ok: 0, n: 0 }; out[k].n++; if (isRight(i)) out[k].ok++; });
+    return out;
+  }
+  function rows(host, data, nameOf) {
+    host.textContent = '';
+    Object.keys(data).forEach(function (k) {
+      var r = el('div', 'row'), left = el('div');
+      left.appendChild(el('div', null, nameOf(k)));
+      var bar = el('div', 'bar'), fill = el('i'); fill.style.width = Math.round(100 * data[k].ok / data[k].n) + '%';
+      bar.appendChild(fill); left.appendChild(bar);
+      r.appendChild(left); r.appendChild(el('div', 'n', data[k].ok + '/' + data[k].n));
+      host.appendChild(r);
+    });
+  }
+  function total() { var ok = 0; Q.forEach(function (_, i) { if (isRight(i)) ok++; }); return ok; }
+
+  function results() {
+    var ok = total();
+    $('score').textContent = ok + ' / ' + Q.length + ' corretas (' + Math.round(100 * ok / Q.length) + '%)';
+    $('scoresub').textContent = 'Tempo usado: ' + fmt(elapsed()) + ' de 120:00 · ' + (Q.length - answered()) + ' sem resposta';
+    rows($('bydomain'), tally(function (q) { return q.d; }), function (k) { return 'D' + k + ' · ' + DOMAINS[k]; });
+    rows($('byscenario'), tally(function (q) { return q.s; }), function (k) { return SCEN[k].name; });
+  }
+
+  function summary() {
+    var ok = total(), lines = ['Simulado CCAR-F: ' + ok + '/' + Q.length + ' (' + Math.round(100 * ok / Q.length) + '%) · tempo ' + fmt(elapsed())];
+    var d = tally(function (q) { return q.d; });
+    lines.push(Object.keys(d).map(function (k) { return 'D' + k + ' ' + d[k].ok + '/' + d[k].n; }).join(' · '));
+    var wrong = [];
+    Q.forEach(function (item, i) {
+      if (isRight(i)) return;
+      var mine = (state.answers[i] || []).map(function (k) { return LET[k]; }).join('') || '-';
+      wrong.push((i + 1) + ' [' + item.t + '] ' + mine + '→' + item.a.map(function (k) { return LET[k]; }).join(''));
+    });
+    lines.push('Erradas (n [task] minha→correta): ' + (wrong.join(', ') || 'nenhuma'));
+    var fl = Object.keys(state.flags).map(function (k) { return +k + 1; });
+    if (fl.length) lines.push('Marcadas para revisar: ' + fl.join(', '));
+    return lines.join('\n');
+  }
+
+  // Two-step buttons instead of browser dialogs
+  function twoStep(btn, armedText, action) {
+    var idle = btn.textContent, timer = null;
+    btn.onclick = function () {
+      if (btn.classList.contains('armed')) { clearTimeout(timer); btn.classList.remove('armed'); btn.textContent = idle; action(); return; }
+      btn.classList.add('armed'); btn.textContent = armedText();
+      timer = setTimeout(function () { btn.classList.remove('armed'); btn.textContent = idle; }, 4000);
+    };
+  }
+  twoStep($('finish'), function () {
+    var miss = Q.length - answered();
+    return miss ? 'Faltam ' + miss + ' · clicar de novo' : 'Confirmar finalização';
+  }, function () {
+    state.done = true; state.end = Date.now(); if (!state.start) state.start = state.end;
+    save(); paint(); window.scrollTo(0, 0);
+  });
+  twoStep($('reset'), function () { return 'Apagar tudo? Clicar de novo'; }, function () {
+    state = { answers: {}, flags: {}, start: null, end: null, done: false };
+    app.classList.remove('only-wrong'); $('onlywrong').textContent = 'Mostrar só as erradas'; $('copyout').style.display = 'none';
+    save(); paint(); window.scrollTo(0, 0);
+  });
+
+  $('onlywrong').onclick = function () {
+    var on = app.classList.toggle('only-wrong');
+    this.textContent = on ? 'Mostrar todas' : 'Mostrar só as erradas';
+  };
+  $('copy').onclick = function () {
+    var text = summary(), box = $('copyout'), btn = this;
+    box.value = text; box.style.display = 'block'; box.select();
+    var done = function () { btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = 'Copiar resultado'; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+    else { try { document.execCommand('copy'); done(); } catch (e) {} }
+  };
+
+  paint();
+})();
+</script>
+</body>
+</html>
