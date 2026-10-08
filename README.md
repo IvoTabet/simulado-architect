@@ -4,4 +4,5 @@ Simulado não oficial de 60 questões para a certificação Claude Certified Arc
 
 As questões foram geradas com o Claude a partir do Exam Guide v1.0. Não é material da Anthropic e não substitui o practice test oficial.
 
-Abrir: https://ivotabet.github.io/simulado-architect/
+- Simulado 1 (escrito a partir do Exam Guide): https://ivotabet.github.io/simulado-architect/
+- Simulado 2 (escrito a partir dos objetivos de um score report real): https://ivotabet.github.io/simulado-architect/simulado2.html

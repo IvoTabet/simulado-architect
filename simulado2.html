@@ -1,0 +1,1396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulado CCAR-F 2</title>
+<style>
+  :root {
+    --bg: #eef1f5; --card: #ffffff; --ink: #141a24; --muted: #6b7686; --line: #d9dee6;
+    --opt: #f4f6f9; --accent: #1d2433; --accent-ink: #ffffff;
+    --sel: #e4ebff; --sel-line: #3b63d8;
+    --ok: #1e8e4e; --ok-bg: #e5f6ec; --bad: #c93a3a; --bad-bg: #fdeaea; --flag: #b7791f; --flag-bg: #fdf3dc;
+    --on: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151b; --card: #1b2029; --ink: #e8ecf2; --muted: #98a3b3; --line: #2e3643;
+      --opt: #232a35; --accent: #e8ecf2; --accent-ink: #12151b;
+      --sel: #1f2c52; --sel-line: #7d9bf5;
+      --ok: #55c98a; --ok-bg: #15301f; --bad: #f08080; --bad-bg: #3a1c1c; --flag: #e3b25a; --flag-bg: #3a2e14;
+      --on: #12151b; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151b; --card: #1b2029; --ink: #e8ecf2; --muted: #98a3b3; --line: #2e3643;
+    --opt: #232a35; --accent: #e8ecf2; --accent-ink: #12151b;
+    --sel: #1f2c52; --sel-line: #7d9bf5;
+    --ok: #55c98a; --ok-bg: #15301f; --bad: #f08080; --bad-bg: #3a1c1c; --flag: #e3b25a; --flag-bg: #3a2e14;
+    --on: #12151b; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
+
+  .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .top-in { max-width: 860px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .top h1 { font-size: 22px; margin: 0; margin-right: auto; }
+  .pill { font-size: 11px; font-weight: 700; letter-spacing: .08em; padding: 5px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
+  .stat { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stat b { color: var(--ink); }
+  .stat.late b { color: var(--bad); }
+  .btn { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.armed { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); }
+
+  details.nav { margin: 16px 0 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+  details.nav summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; margin-top: 10px; }
+  .grid a { text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--opt); color: var(--muted); text-decoration: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .grid a.answered { background: var(--sel); border-color: var(--sel-line); color: var(--ink); }
+  .grid a.flagged { box-shadow: inset 0 -3px 0 var(--flag); }
+  .grid a.right { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .grid a.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-top: 18px; scroll-margin-top: 80px; }
+  .scenario { border-style: dashed; }
+  .scenario h2 { margin: 0 0 6px; font-size: 17px; }
+  .scenario p { margin: 0; color: var(--muted); font-size: 14px; }
+  .label { display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .label .tag { letter-spacing: .04em; text-transform: none; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .label .tag.multi { border-color: var(--sel-line); color: var(--sel-line); }
+  .label .flagbtn { margin-left: auto; border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 500; }
+  .card.is-flagged .flagbtn { background: var(--flag-bg); border-color: var(--flag); color: var(--flag); }
+  .q { font-weight: 700; font-size: 17px; margin: 10px 0 16px; overflow-wrap: anywhere; }
+  .opt { display: flex; gap: 12px; align-items: flex-start; flex: 1; min-width: 0; text-align: left; background: var(--opt); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 15px; overflow-wrap: anywhere; }
+  .optrow { display: flex; gap: 8px; align-items: stretch; margin-top: 10px; }
+  .strike { flex: none; width: 38px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; color: var(--muted); font-size: 14px; }
+  .optrow.struck .opt { opacity: .55; }
+  .optrow.struck .opt span:last-child { text-decoration: line-through; }
+  .optrow.struck .strike { background: var(--opt); color: var(--ink); border-color: var(--muted); }
+  .done .strike { display: none; }
+  .opt .let { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .opt.sel { background: var(--sel); border-color: var(--sel-line); }
+  .opt.sel .let { background: var(--sel-line); border-color: var(--sel-line); color: var(--on); }
+  .done .opt { cursor: default; }
+  .opt.correct { background: var(--ok-bg); border-color: var(--ok); }
+  .opt.correct .let { background: var(--ok); border-color: var(--ok); color: var(--on); }
+  .opt.sel.incorrect { background: var(--bad-bg); border-color: var(--bad); }
+  .opt.sel.incorrect .let { background: var(--bad); border-color: var(--bad); color: var(--on); }
+  .expl { display: none; margin-top: 14px; padding: 12px 14px; border-left: 3px solid var(--line); font-size: 14px; color: var(--muted); }
+  .expl b { color: var(--ink); }
+  .done .expl { display: block; }
+  .done .card.q-right .expl { border-left-color: var(--ok); }
+  .done .card.q-wrong .expl { border-left-color: var(--bad); }
+  .only-wrong .card.q-right, .only-wrong .card.scenario { display: none; }
+
+  #result { display: none; }
+  .done #result { display: block; }
+  #result h2 { margin: 0 0 4px; font-size: 26px; }
+  #result .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .rows { display: grid; gap: 8px; margin: 10px 0 16px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 14px; }
+  .row .bar { height: 6px; background: var(--opt); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .row .bar i { display: block; height: 100%; background: var(--sel-line); }
+  .row .n { text-align: right; font-variant-numeric: tabular-nums; }
+  #result h3 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 16px 0 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #copyout { display: none; width: 100%; height: 150px; margin-top: 10px; font: 13px/1.4 ui-monospace, Consolas, monospace; background: var(--opt); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-in">
+    <h1>Simulado 2</h1>
+    <span class="pill">IN ENGLISH</span>
+    <span class="stat" id="timer">Tempo <b>120:00</b></span>
+    <span class="stat" id="count">Respondidas <b>0/60</b></span>
+    <a class="btn" style="text-decoration: none;" href="./">Ir ao simulado 1</a>
+    <button class="btn primary" id="finish">Finalizar</button>
+    <button class="btn" id="reset">Refazer exercícios</button>
+  </div>
+</div>
+
+<div class="wrap" id="app">
+  <div class="card" style="border-color: var(--flag); background: var(--flag-bg); font-size: 14px;"><b>Aviso.</b> Simulado não oficial. As questões foram escritas a partir dos objetivos de um score report real da prova e verificadas na documentação oficial, com mais peso em orquestração multiagente, revisão humana, Batch API e tool_choice. Não reproduz questões da prova, e a dificuldade não foi validada: uma nota alta aqui não garante aprovação.</div>
+
+  <details class="nav" open>
+    <summary>Navegação · azul = respondida · traço amarelo = marcada para revisar · ✕ ou clique direito risca uma alternativa</summary>
+    <div class="grid" id="grid"></div>
+  </details>
+
+  <div class="card" id="result">
+    <h2 id="score"></h2>
+    <p class="sub" id="scoresub"></p>
+    <h3>Por domínio</h3>
+    <div class="rows" id="bydomain"></div>
+    <h3>Por cenário</h3>
+    <div class="rows" id="byscenario"></div>
+    <h3>Por objetivo</h3>
+    <div class="rows" id="byobjective"></div>
+    <div class="actions">
+      <button class="btn" id="onlywrong">Mostrar só as erradas</button>
+      <button class="btn" id="copy">Copiar resultado</button>
+    </div>
+    <textarea id="copyout" readonly></textarea>
+    <p class="note">Simulado não oficial, escrito a partir do Exam Guide v1.0. A nota real é uma escala de 100 a 1.000 com corte em 720, que não equivale diretamente a esta porcentagem.</p>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script id="data">
+const DOMAINS = {
+  1: 'Agentic Architecture & Orchestration',
+  2: 'Tool Design & MCP Integration',
+  3: 'Claude Code Configuration & Workflows',
+  4: 'Prompt Engineering & Structured Output',
+  5: 'Context Management & Reliability'
+};
+
+const SCEN = {
+  CS: { tag: 'Customer Support', name: 'Customer Support Resolution Agent',
+        desc: 'You are building a customer support agent with the Claude Agent SDK. It handles returns, billing disputes and account issues through MCP tools (get_customer, lookup_order, process_refund, escalate_to_human).' },
+  MR: { tag: 'Multi-Agent Research', name: 'Multi-Agent Research System',
+        desc: 'A coordinator agent delegates to specialized subagents: web search, document analysis, synthesis and report generation. The system produces comprehensive, cited reports.' },
+  DP: { tag: 'Developer Productivity', name: 'Developer Productivity with Claude',
+        desc: 'An agent helps engineers explore unfamiliar codebases, understand legacy systems and automate repetitive tasks, using the built-in tools (Read, Write, Edit, Bash, Grep, Glob) and MCP servers.' },
+  CG: { tag: 'Code Generation', name: 'Code Generation with Claude Code',
+        desc: 'Your team uses Claude Code for code generation, refactoring and debugging. You configure CLAUDE.md, rules, skills and decide when to use plan mode versus direct execution.' },
+  CI: { tag: 'Claude Code CI', name: 'Claude Code for Continuous Integration',
+        desc: 'Claude Code runs in your CI/CD pipeline: automated code review, test generation and pull request feedback. Feedback must be actionable, with few false positives.' },
+  EX: { tag: 'Data Extraction', name: 'Structured Data Extraction',
+        desc: 'A system extracts information from unstructured documents, validates the output with JSON schemas and feeds downstream systems. It must handle edge cases gracefully.' }
+};
+
+const Q = [
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Parallel tool calls",
+  "h": 0,
+  "q": "A coordinator must research four independent subtopics. In the current design it invokes one search subagent, waits for the result, and only then invokes the next. A run takes about four times as long as a single search, and none of the searches uses the results of another. The team wants to cut the latency without changing the subagents themselves. Which change achieves this?",
+  "o": [
+   "Have the coordinator emit all four subagent invocations as multiple tool calls within one response, so that they run concurrently.",
+   "Move the four searches to the Message Batches API and collect the results once the batch has finished processing.",
+   "Merge the four subtopics into one prompt for a single search subagent and give that subagent a higher max_tokens.",
+   "Keep the sequential calls, but lower the turn limit of each subagent so that every individual search finishes sooner."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Independent subtasks run in parallel when the coordinator emits several tool calls in a single response, which removes the round trips. The Batch API has no latency guarantee, and merging the subtopics gives up both isolation and parallelism."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Parallel tool calls",
+  "h": 0,
+  "q": "A coordinator’s system prompt says \"run the three analyses in parallel\". Logs show that each response from the coordinator contains exactly one Task call, and that the next call appears only after the previous result has been returned. The three analyses are independent. What explains the sequential behavior, and what is the fix?",
+  "o": [
+   "The three subagents share a single context window and therefore cannot run at the same time; each one needs its own session, created with fork_session.",
+   "Calls run in parallel only when they are emitted in the same response; the coordinator should issue the three Task calls together in one turn.",
+   "The API always executes the tool calls of one conversation strictly in order, so three separate coordinators have to be started for the three analyses.",
+   "The coordinator needs tool_choice set to \"any\", so that it is forced to call a tool on every one of its turns instead of answering in text."
+  ],
+  "a": [
+   1
+  ],
+  "e": "One Task call per turn means one subagent at a time. Parallelism comes from emitting multiple tool calls within a single response. Subagents already have isolated contexts, and tool_choice \"any\" forces a tool call, not several."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Parallel tool calls",
+  "h": 0,
+  "q": "A coordinator has four subtasks: search regulations in the EU, search regulations in the US, search regulations in Brazil, and write a comparison of the three. A developer changes the coordinator so that all four are issued as tool calls in a single response. The three searches work, but the comparison comes back nearly empty. What is the correct design?",
+  "o": [
+   "Run all four subtasks sequentially, because mixing parallel and sequential calls in one coordinator is unreliable.",
+   "Issue all four together, and let the comparison subagent ask the coordinator for the search results when it needs them.",
+   "Issue the three searches together in one response, then invoke the comparison in a later turn with the three results included in its prompt.",
+   "Issue all four together, and give the comparison subagent the same search tools so that it can repeat the searches itself."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Only independent subtasks can run in parallel. The comparison depends on the search results, so it must be invoked afterwards, with those results passed explicitly in its prompt."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Diagnose subagent spawning",
+  "h": 0,
+  "q": "A developer defines three subagents with AgentDefinition (a description, a prompt and a tools list for each) and passes them to the coordinator. The coordinator is configured with allowedTools: [\"Read\", \"Grep\", \"Glob\", \"WebSearch\"]. In every run the coordinator performs the research itself and no subagent is ever invoked, although its prompt explicitly asks it to delegate. What is the most likely cause?",
+  "o": [
+   "The subagent descriptions are not detailed enough for the coordinator to match tasks to them automatically.",
+   "The subagents need WebSearch in their own tools lists before the coordinator is able to invoke them.",
+   "Subagents can only be defined as files in .claude/agents/ and are ignored when defined programmatically.",
+   "The tool that spawns subagents, Task, is missing from the coordinator’s allowedTools."
+  ],
+  "a": [
+   3
+  ],
+  "e": "The Task tool is the mechanism for spawning subagents, and the coordinator’s allowedTools must include it. Note: the exam guide calls the tool \"Task\"; current SDK documentation names it \"Agent\" (it was renamed), so recognize both."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Diagnose subagent spawning",
+  "h": 0,
+  "q": "A coordinator delegates to a \"doc-analyzer\" subagent that is defined with a description and a prompt, but without a tools field. The team expected this subagent to be read-only. During a run it edits two files in the repository. Nothing else in the configuration mentions tools for this subagent. What explains this?",
+  "o": [
+   "When tools is omitted from an AgentDefinition, the subagent inherits the available tools; a read-only subagent needs an explicit list such as Read, Grep and Glob.",
+   "The subagent inherited the coordinator’s conversation history, and that history contained an earlier instruction to edit the two files.",
+   "A subagent’s behavior cannot be limited through configuration, so its description should have stated that it is \"read-only\".",
+   "The coordinator’s own allowedTools did not include Edit, which caused the restriction on the subagent to be skipped."
+  ],
+  "a": [
+   0
+  ],
+  "e": "The tools field of AgentDefinition is optional; when it is omitted the subagent inherits the tools available to subagents. Restricting a subagent to its role requires listing its tools explicitly. Subagents do not inherit the parent’s conversation history."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Diagnose subagent spawning",
+  "h": 0,
+  "q": "A coordinator invokes a \"summarizer\" subagent with the prompt \"Summarize the three reports we discussed above.\" The subagent replies that it has no reports to summarize. The coordinator’s own context contains all three reports, and the subagent is correctly defined and was invoked successfully. What is wrong with the wiring between the two?",
+  "o": [
+   "The subagent’s tools list lacks Read, so it is unable to open the coordinator’s context and find the reports.",
+   "The subagent should have been resumed from the coordinator’s session instead of being invoked as a new subagent.",
+   "A subagent starts with a fresh context and receives only the prompt of the invocation; the reports must be included in that prompt.",
+   "The subagent’s description does not mention summarization, so it was started with a reduced version of the context."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Subagents do not inherit the coordinator’s conversation. The only content passed from parent to subagent is the invocation prompt, so everything the subagent needs must be placed there."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Subagent prompt context",
+  "h": 0,
+  "q": "A synthesis subagent receives findings from two upstream subagents. To keep its prompt short, the coordinator passes only the one-line conclusion of each finding. Several times per run, the synthesis subagent then asks the coordinator for the source and the date behind individual conclusions, which adds round trips. Which change best removes the round trips while keeping the prompt manageable?",
+  "o": [
+   "Give the synthesis subagent the web search tool, so that it can locate the sources again without asking the coordinator.",
+   "Pass each finding as a structured record that contains the claim, the supporting excerpt, the source and the date.",
+   "Pass the complete raw output of both upstream subagents, including their reasoning and all intermediate tool results.",
+   "Tell the synthesis subagent to continue without sources whenever a source is not already present in its prompt."
+  ],
+  "a": [
+   1
+  ],
+  "e": "The prompt must contain everything needed to finish the task without returning to the coordinator. Structured records (claim, evidence, source, date) do that compactly. Raw output with reasoning chains also contains the information but wastes the downstream context budget."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Subagent prompt context",
+  "h": 0,
+  "q": "A report-writing subagent produces well-written reports, but every number in them is slightly off: \"around 40%\" where the analysis said 38.2%, \"last spring\" where it said 14 April. The coordinator’s invocation prompt contains a narrative paragraph that the coordinator itself wrote from the analysis results. What should the coordinator pass instead?",
+  "o": [
+   "The same narrative paragraph, followed by an instruction to be precise with numbers and dates.",
+   "A shorter narrative paragraph, so that the important numbers and dates stand out more clearly.",
+   "A request for the report subagent to contact the analysis subagent directly for the exact figures.",
+   "The analysis results themselves as structured data, with the exact figures, dates and sources."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Precision was lost when the coordinator paraphrased. Pass the findings as structured data with exact values and source metadata. Subagents communicate through the coordinator, not directly with each other."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Delegation: goals vs procedure",
+  "h": 0,
+  "q": "A coordinator delegates competitor research with this prompt: \"Search for the company’s pricing page, open it, copy the three plan prices, then search for one press release from this year.\" For companies with usage-based pricing and no public plans, the subagent returns nothing useful. The coordinator still needs to see what each subagent did. Which prompt design is best?",
+  "o": [
+   "Keep the procedure, and add a separate branch to it for every pricing model that the team is able to think of, including usage-based pricing.",
+   "Remove all of the instructions and let each subagent decide by itself what is worth researching about the company and how to report it.",
+   "State the goal (how the company charges, with evidence) and the quality criteria, and require a structured report of sources and gaps.",
+   "Keep the procedure, run it on three subagents at the same time, and accept whichever result the majority of the three returns."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Goal-oriented prompts with quality criteria let subagents adapt to cases a procedure did not foresee. Requiring a structured report keeps the coordinator’s visibility and control. Removing all guidance gives up that control."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Delegation: goals vs procedure",
+  "h": 0,
+  "q": "A team rewrote its subagent prompts from step-by-step procedures to goals. Results improved, but the coordinator can no longer tell how a subagent reached a conclusion, and two poorly supported reports went unnoticed. The team wants to keep the adaptive behavior. What should it add?",
+  "o": [
+   "A requirement that each subagent reports back through the coordinator in a structured format: sources, what was attempted, open gaps.",
+   "A return to step-by-step procedures, so that every subagent follows the same path and its behavior can be predicted and audited by the coordinator.",
+   "A direct channel from the research subagents to the synthesis subagent, so that findings arrive with less delay and without being reworded.",
+   "A second subagent that repeats each task independently, so that the two answers can be compared and disagreements flagged afterwards."
+  ],
+  "a": [
+   0
+  ],
+  "e": "The approach to select is the one that enables adaptive behavior while keeping coordinator visibility and control: goals plus structured reporting routed through the coordinator. Going back to procedures restores predictability at the cost of adaptability."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Orchestration patterns",
+  "h": 0,
+  "q": "A research system answers broad questions such as \"How are central banks approaching digital currencies?\" Coverage matters most, the questions vary widely, and the relevant subtopics are not known in advance. Which structure fits best?",
+  "o": [
+   "A fixed sequential pipeline of search, analysis and synthesis that always uses the same three steps and the same query template.",
+   "A single agent that holds every tool and works through the whole question in one long conversation.",
+   "A group of parallel subagents that pass partial results directly to one another as soon as they find them.",
+   "A coordinator that decomposes each question into subtopics, delegates them to parallel workers, checks coverage and re-delegates for gaps."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Broad, variable questions need a coordinator that decomposes dynamically, runs workers in parallel, and iterates on coverage gaps. A fixed pipeline cannot adapt, and peer-to-peer subagents lose observability and consistent error handling."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Orchestration patterns",
+  "h": 0,
+  "q": "A nightly job turns each new regulatory filing into a summary through the same three stages: extract the sections, classify each section, write the summary. Every stage depends on the previous one, the steps never vary, and reliability matters more than speed. An engineer proposes a coordinator that spawns parallel subagents dynamically. What is the better structure?",
+  "o": [
+   "The proposed coordinator with dynamic subagents, because the coordinator-worker pattern is the most capable one available.",
+   "A sequential pipeline with the three fixed stages, because the steps are known and each one depends on the previous one.",
+   "Three subagents running in parallel, one per stage, whose outputs are merged into the summary at the end.",
+   "A single prompt that performs all three stages in one call, in order to reduce the latency of the nightly job."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Choose the pattern from the requirements. Known, dependent steps call for a fixed sequential pipeline (prompt chaining). Parallel execution needs independent subtasks, and dynamic orchestration adds variability the task does not need."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Orchestration patterns",
+  "h": 0,
+  "q": "A coordinator fans out to six parallel search workers. When one worker fails, the whole run is aborted, and about one run in five produces no report at all. Stakeholders have said they prefer a report that states its gaps over no report. Which change to the orchestration best fits that requirement?",
+  "o": [
+   "Run the six workers one after another instead of in parallel, so that a failing worker is easier to locate in the logs and to restart.",
+   "Have a failed worker return an empty result marked as successful, so that the coordinator always receives six results and the run completes.",
+   "Have a failed worker return structured error context, and let the coordinator continue with partial results and annotate the gaps.",
+   "Retry the entire run automatically, as many times as needed, until all six workers succeed together and a complete report can be produced."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Terminating the whole workflow on one failure and silently returning empty success are both anti-patterns. Structured error context lets the coordinator proceed with partial results and report coverage gaps."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "State persistence",
+  "h": 0,
+  "q": "A multi-agent pipeline processes 200 documents over several hours. When the process crashes at document 140, a restart begins again from document 1, because all progress lived in the coordinator’s conversation. Which design enables reliable resumption?",
+  "o": [
+   "Raise the coordinator’s context limit and keep the whole run in one conversation, so that the conversation survives longer runs without losing progress.",
+   "Have each agent export its state to a known location as it works, and have the coordinator load a manifest on restart and pass it to the agents.",
+   "Ask the coordinator to write a detailed summary of its progress into the final message of its conversation, to be read after a restart.",
+   "Run /compact at regular intervals during the run, so that the coordinator’s conversation remains small enough to be resumed later."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Crash recovery needs state that lives outside the conversation: each agent exports structured state to a known location, and the coordinator loads a manifest on resume. /compact reduces context use but does not persist progress."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "State persistence",
+  "h": 0,
+  "q": "After an interruption, a research pipeline is resumed from its saved session history. The run completes, but the report relies on a source list that was replaced while the pipeline was down, and two findings are now wrong. The saved history still contained the old tool results. What is the more reliable way to resume in this situation?",
+  "o": [
+   "Resume the same session as it is; the agent will notice which earlier results look outdated and run those tools again by itself.",
+   "Resume the same session, and add an instruction to \"double-check everything\" to the next prompt so that stale results are caught.",
+   "Discard all of the prior work and restart the whole pipeline from its first step, so that no outdated result can remain anywhere.",
+   "Start from the persisted structured state, and inject a summary of what changed so that only the affected steps are redone."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Resuming with stale tool results makes the agent reason from outdated data. Starting from structured state with an injected summary of what changed avoids both the stale results and repeating completed work."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "State persistence",
+  "h": 0,
+  "q": "Each agent in a long-running pipeline must persist something that allows the work to continue after an interruption, without repeating what is already done and without losing what was found. Which content is the best choice?",
+  "o": [
+   "A structured record of the completed items, the key findings with their sources, and what remains to be done.",
+   "The agent’s complete conversation transcript, including every tool result, so that nothing can be lost.",
+   "A single flag that says whether the agent has finished its part of the work or not.",
+   "The agent’s system prompt and tool list, so that an identical agent can be created again."
+  ],
+  "a": [
+   0
+  ],
+  "e": "A structured state export captures what was completed and what was found in a form that can be injected into a fresh prompt. A full transcript brings back verbose and possibly stale tool results; a flag or a configuration copy loses the findings."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Subagent tool and context scoping",
+  "h": 0,
+  "q": "A coordinator defines a \"fact-checker\" subagent. It should verify claims against the documents it is given, never browse the web, and always answer in a fixed verdict format. Which configuration constrains it to this role?",
+  "o": [
+   "A detailed description field, because the description is what determines what a subagent is permitted to do.",
+   "No specific configuration; the coordinator explains the limits again in the prompt of every invocation.",
+   "A tools list limited to document-reading tools, and a system prompt that defines the role and the verdict format.",
+   "A reduced allowedTools list on the coordinator, containing only the document-reading tools."
+  ],
+  "a": [
+   2
+  ],
+  "e": "A subagent is scoped by its own tool restrictions and its own system prompt. The description tells the coordinator when to use the subagent; it does not limit what the subagent can do. Reducing the coordinator’s tools changes the wrong agent."
+ },
+ {
+  "s": "MR",
+  "d": 1,
+  "t": "Dynamic decomposition",
+  "h": 0,
+  "q": "An agent is asked to find out why a data pipeline produces duplicate rows. A plan of five checks was written in advance. The second check shows that the cause lies in a system the plan never mentions, yet the agent carries out the remaining three checks anyway and reports that no cause was found. Which decomposition approach fits this task?",
+  "o": [
+   "A longer fixed plan, written in advance, that lists a larger number of systems to check.",
+   "An adaptive plan, in which the next subtasks are generated from what each step discovers.",
+   "The same fixed plan, with its five checks executed by five subagents in parallel.",
+   "A single prompt that asks for the root cause directly, without any intermediate steps."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Open-ended investigation needs subtasks that adapt as information is discovered, rather than a fixed sequence that runs regardless of intermediate findings."
+ },
+ {
+  "s": "MR",
+  "d": 5,
+  "t": "Synthesis preserving uncertainty",
+  "h": 0,
+  "q": "Two credible sources disagree: one reports that 34% of firms have adopted a technology, the other 51%. The synthesis subagent writes \"roughly 40% of firms have adopted it.\" How should the synthesis behave instead?",
+  "o": [
+   "Use the figure from the more recent of the two sources, and leave the other figure out of the report.",
+   "Leave the statistic out of the report entirely, because it cannot be confirmed.",
+   "State the higher of the two figures, with a note that adoption is growing over time.",
+   "Report both figures with their sources and context, and mark the point as contested instead of settled."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Conflicting data must not be collapsed into a single confident statement. Keep both values with source attribution and present the point as contested."
+ },
+ {
+  "s": "MR",
+  "d": 5,
+  "t": "Synthesis preserving uncertainty",
+  "h": 0,
+  "q": "A document-analysis subagent finds two different values for the same metric in two sources. Three designs are proposed: the analysis subagent keeps the value it trusts more; the analysis subagent returns both values, annotated with their sources, and the coordinator decides how to reconcile them before synthesis; or the synthesis subagent averages them. Which design is recommended, and why?",
+  "o": [
+   "Let the analysis subagent choose one value, because it is the agent that has read both sources most closely.",
+   "Return both annotated values and let the coordinator decide, because the conflict stays visible and attributable.",
+   "Let the synthesis subagent average the two values, because a single figure makes the report easier to read.",
+   "Have the analysis subagent stop and report an error, because conflicting data makes the analysis unreliable."
+  ],
+  "a": [
+   1
+  ],
+  "e": "The analysis should be completed with the conflicting values included and explicitly annotated, leaving reconciliation to the coordinator. Choosing or averaging silently destroys the source-level uncertainty."
+ },
+ {
+  "s": "MR",
+  "d": 5,
+  "t": "Synthesis preserving uncertainty",
+  "h": 0,
+  "q": "A final report mixes findings confirmed by five independent sources with findings that rest on one disputed blog post. Readers cannot tell them apart, because every statement is written in the same confident tone. Which change to the synthesis output addresses this best?",
+  "o": [
+   "Add a general disclaimer at the end of the report, explaining that some of the findings rest on weaker evidence than others and may be uncertain.",
+   "Remove from the report every finding that is supported by fewer than three independent sources, so that only solid findings remain.",
+   "Separate well-established findings from contested ones in explicit sections, keeping how each source characterized them.",
+   "Ask the synthesis subagent to use more cautious wording for all of the statements in the report, such as \"may\" and \"appears to\"."
+  ],
+  "a": [
+   2
+  ],
+  "e": "The report should distinguish well-established findings from contested ones explicitly and per finding. A blanket disclaimer or uniformly cautious wording still leaves the reader unable to tell which is which."
+ },
+ {
+  "s": "MR",
+  "d": 5,
+  "t": "Subagent output schemas",
+  "h": 0,
+  "q": "A synthesis output contains financial figures, a timeline of news events and technical findings. The subagent renders all of it as uniform bullet points, and readers struggle to compare the figures. What is the better design?",
+  "o": [
+   "Render each type in the form that suits it: figures as tables, news as prose, technical findings as structured lists.",
+   "Convert all of the content to tables, so that the whole report follows one consistent format and every item can be compared.",
+   "Convert all of the content to prose, so that the report reads naturally from start to finish without changes of format.",
+   "Return raw JSON for all of the content, and leave the choice of formatting to whichever system or person reads the report."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Different content types should be rendered in the format best suited to them, rather than converting everything to one uniform format."
+ },
+ {
+  "s": "MR",
+  "d": 2,
+  "t": "Tool distribution",
+  "h": 0,
+  "q": "A synthesis subagent was given the full set of 18 tools \"to be safe\". Logs show that it sometimes runs its own web searches instead of using the findings in its prompt, and that its tool selection has become unreliable. It does legitimately need to verify a simple fact now and then. What is the best configuration?",
+  "o": [
+   "Keep all 18 tools, and add an instruction to the system prompt telling the subagent not to search the web and to rely on its prompt.",
+   "Remove every tool from the subagent, and route even the simplest fact checks through the coordinator to the search subagent.",
+   "Keep all 18 tools, but rewrite their descriptions so that each one states precisely when the synthesis subagent may use it.",
+   "Give it only the tools for its role plus a scoped verify_fact tool, and route complex verification through the coordinator."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Too many tools degrade selection, and tools outside an agent’s role get misused. Assign only role-relevant tools, with a scoped cross-role tool for the frequent simple need. Removing everything adds round trips for the common case."
+ },
+ {
+  "s": "DP",
+  "d": 1,
+  "t": "Session resumption",
+  "h": 0,
+  "q": "You analyzed a large module yesterday in a named session. Overnight, a teammate changed two of its forty files. You want to continue today without repeating the analysis. What is the best approach?",
+  "o": [
+   "Resume the session by name and continue working as if nothing in the module had changed.",
+   "Start a completely new session and analyze all forty files of the module again.",
+   "Resume the session by name and tell the agent which two files changed, so that it re-analyzes only those.",
+   "Fork the session, and compare the conclusions of the fork with those of the original."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Most of the prior context is still valid, so resume and inform the agent of the specific changes for targeted re-analysis. Full re-exploration repeats work that does not need repeating."
+ },
+ {
+  "s": "DP",
+  "d": 2,
+  "t": "Codebase exploration",
+  "h": 0,
+  "q": "An agent must explain how authentication works in an unfamiliar repository of 3,000 files. It begins by reading every file under src/ in order, and its context is nearly full before it reaches the relevant code. Which strategy should it use instead?",
+  "o": [
+   "Search for entry points with Grep, read those files, and follow their imports to trace the flow.",
+   "Use Glob to list all of the files, and then read the 200 largest ones in full.",
+   "Read the same files in reverse order, on the assumption that newer code comes last.",
+   "Switch to a model with a larger context window, and then read all of the files."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Build understanding incrementally: Grep to find entry points, then Read to follow imports and trace flows. Reading everything upfront spends the context window on irrelevant files."
+ },
+ {
+  "s": "DP",
+  "d": 2,
+  "t": "Codebase exploration",
+  "h": 0,
+  "q": "An agent searches for the callers of a function with Grep and finds three. The function is also re-exported by an index module under a different name, which the agent has not noticed. Which practice would have revealed the remaining callers?",
+  "o": [
+   "Running the same Grep search again, with more lines of context around each match.",
+   "Using Glob with the name of the function as the file pattern.",
+   "Reading each of the three calling files from beginning to end.",
+   "Identifying all names under which the function is exported, then searching for each of them."
+  ],
+  "a": [
+   3
+  ],
+  "e": "To trace usage through wrapper modules, first identify every exported name and then search for each one. Glob matches file paths, not call sites."
+ },
+ {
+  "s": "DP",
+  "d": 5,
+  "t": "Context window optimization",
+  "h": 0,
+  "q": "A support conversation has run for 90 turns. To stay within limits, the history is summarized every 20 turns. Later answers are fluent, but they get the customer’s order number and the promised refund date wrong. Which technique addresses this while still controlling token use?",
+  "o": [
+   "Stop summarizing altogether and send the entire conversation history with every request, so that no detail can be lost in a summary.",
+   "Keep exact facts (identifiers, amounts, dates) in a structured state object sent with every request, and summarize only the rest.",
+   "Summarize more often than every 20 turns, so that each summary covers fewer turns and has less opportunity to lose a detail.",
+   "Keep only the ten most recent turns in each request and drop everything that came earlier, since recent turns matter most."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Summarization blurs exact values, and a plain sliding window drops them. Selective retention keeps the critical facts in a structured state object outside the summarized history."
+ },
+ {
+  "s": "DP",
+  "d": 2,
+  "t": "MCP resources vs tools",
+  "h": 0,
+  "q": "An agent answers questions that span a wiki, an issue tracker and a database. Before each answer it spends many tool calls discovering which pages, projects and tables exist. Which MCP design reduces this?",
+  "o": [
+   "Add one more search tool for each of the three systems the agent has to query.",
+   "Copy the list of all pages, projects and tables into the system prompt of the agent.",
+   "Expose the catalogs (page hierarchy, project list, table schemas) as MCP resources.",
+   "Raise the number of tool calls that the agent is allowed to make in a single turn."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Resources expose content catalogs so the agent can see what is available without exploratory tool calls; tools are for actions. A list pasted into the system prompt goes stale and is paid for on every request."
+ },
+ {
+  "s": "DP",
+  "d": 2,
+  "t": "MCP tool descriptions",
+  "h": 0,
+  "q": "An MCP server offers find_ticket and search_tickets. Both descriptions say \"Finds tickets.\" The agent frequently calls search_tickets with a ticket ID and gets no results. What is the most effective fix?",
+  "o": [
+   "Add ten few-shot examples of correct calls to both tools to the system prompt, covering ticket IDs and free-text searches.",
+   "Merge the two tools into a single tool that inspects its input and guesses which of the two behaviors is intended.",
+   "Tell the agent in the system prompt to \"pick the right ticket tool every time\", and to check the input before calling.",
+   "Rewrite each description to state the input format, when to use the tool, and how it differs from the other one."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Tool descriptions are the primary mechanism for tool selection. Each should state purpose, input format, boundaries and its relationship to similar tools."
+ },
+ {
+  "s": "CG",
+  "d": 1,
+  "t": "Plan mode vs direct vs multi-phase",
+  "h": 0,
+  "q": "You must replace a logging library that is used in about 60 files. Usage differs by module, some call sites depend on behavior the new library lacks, and the team lead wants to approve the approach before any file is changed. Which workflow fits?",
+  "o": [
+   "Direct execution on all 60 files at once, with the team lead reviewing the resulting diff afterwards.",
+   "Plan mode to explore the usage and propose an approach for approval, then direct execution of the approved plan.",
+   "Direct execution on one file per session, for 60 sessions in total, so that each change stays small.",
+   "Plan mode for the entire task from start to finish, since plan mode also applies the edits safely."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Scope, risk and the approval requirement all point to plan mode for investigation and design, followed by direct execution of the approved plan. Plan mode itself is for exploring and designing before changes are committed."
+ },
+ {
+  "s": "CG",
+  "d": 1,
+  "t": "Plan mode vs direct vs multi-phase",
+  "h": 0,
+  "q": "A failing test points to an off-by-one error in a single function. The fix is one changed comparison, the scope is clear, and the team requires no approval for small fixes. A colleague recommends plan mode followed by a multi-phase review. What is the most appropriate choice?",
+  "o": [
+   "Plan mode, because every change to the codebase benefits from being planned first.",
+   "A multi-phase workflow that starts with a discovery phase over the affected module.",
+   "Direct execution, because the change is small, well understood and low risk.",
+   "Plan mode together with the Explore subagent, in order to map the module first."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Direct execution fits simple, well-scoped, low-risk changes. Planning and multi-phase workflows earn their overhead on large, risky or architectural work."
+ },
+ {
+  "s": "CG",
+  "d": 1,
+  "t": "Plan mode vs direct vs multi-phase",
+  "h": 0,
+  "q": "A new feature can be built in three different ways, each with different infrastructure needs. Discovery will require reading large parts of the codebase, and the implementation afterwards will be long. Earlier attempts in a single session ran out of context during implementation. Which approach is best?",
+  "o": [
+   "Direct execution, with a detailed prompt that describes one of the three ways in advance and asks for it to be implemented in full.",
+   "Plan mode in a single session, exploring the codebase and keeping all of the discovery output in the main conversation for reference.",
+   "Direct execution at first, switching to plan mode only if problems with the chosen approach appear along the way.",
+   "Multiple phases: discovery by the Explore subagent, the approach chosen in plan mode from its summaries, then implementation."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Several valid approaches call for planning, and verbose discovery calls for the Explore subagent so that only summaries reach the main conversation. Plan mode in one session is right about planning but repeats the context exhaustion."
+ },
+ {
+  "s": "CG",
+  "d": 3,
+  "t": "Configuration mechanism",
+  "h": 0,
+  "q": "A team has four needs, in this order: conventions that apply only to Terraform files, wherever they are in the repository; a release checklist that is run on request; standards that apply to every session; and a guarantee that a formatter runs after every file edit. Which mapping is correct?",
+  "o": [
+   "A rule with a glob pattern; a skill; CLAUDE.md; a hook.",
+   "CLAUDE.md; a hook; a skill; a rule with a glob pattern.",
+   "A skill; CLAUDE.md; a rule with a glob pattern; a skill.",
+   "A rule with a glob pattern; CLAUDE.md; a skill; an instruction in CLAUDE.md."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Choose by type of guidance and when it applies: path-scoped rules for conventions tied to file patterns, skills for on-demand workflows, CLAUDE.md for always-loaded standards, and hooks when something must happen deterministically."
+ },
+ {
+  "s": "CI",
+  "d": 3,
+  "t": "Review configuration",
+  "h": 0,
+  "q": "A CI job runs Claude Code to review pull requests. The reviews ignore the team’s conventions, the job occasionally modifies files in the checkout, and the output is free text that a script fails to parse. Which configuration addresses all three problems?",
+  "o": [
+   "A longer prompt for the job that lists every convention, explicitly forbids edits to the checkout, and asks for the output as JSON.",
+   "Standards in CLAUDE.md, tool access limited to read-only tools, and output enforced with --output-format json and --json-schema.",
+   "An interactive session in place of the CI job, so that a developer can correct the review and discard unwanted edits as it runs.",
+   "A second CI job that reformats the output of the first one into JSON and reverts any changes that it made to files in the checkout."
+  ],
+  "a": [
+   1
+  ],
+  "e": "A review configuration should load the right project standards (CLAUDE.md), restrict unnecessary tool access, and produce structured output for downstream processing. A longer prompt relies on compliance for all three."
+ },
+ {
+  "s": "CI",
+  "d": 3,
+  "t": "Review configuration",
+  "h": 0,
+  "q": "In a review job, Claude Code runs with -p and --output-format json. The team wants the reviewer to be unable to change the repository, whatever the prompt or the content of the pull request says. Which measure provides that guarantee?",
+  "o": [
+   "Adding the sentence \"do not modify any files under any circumstances\" to the prompt that the review job passes to Claude Code.",
+   "Adding the same sentence to the project’s CLAUDE.md, so that it is loaded automatically on every single run of the job.",
+   "Restricting the job’s tools to read-only ones, so that editing tools are not present at all.",
+   "Asking the reviewer to list, at the end of its output, every file that it changed, so that the job can revert them."
+  ],
+  "a": [
+   2
+  ],
+  "e": "An instruction, wherever it is placed, is probabilistic. Removing the editing tools from the job is a guarantee. In the current CLI, tools are restricted with --tools or --disallowedTools; --allowedTools pre-approves tools without prompting."
+ },
+ {
+  "s": "CI",
+  "d": 3,
+  "t": "Review configuration",
+  "h": 0,
+  "q": "A review job produces accurate findings, but each run words and structures them differently, so the script that posts inline comments often cannot find the file path or the line number. The prompt already describes the desired format in detail. What should be changed?",
+  "o": [
+   "Describe the desired format a second time, at the very end of the prompt.",
+   "Add one example of the desired format to the project’s CLAUDE.md.",
+   "Parse the output of the job with more tolerant regular expressions.",
+   "Supply a JSON schema for the findings, so that the structure of the output is enforced."
+  ],
+  "a": [
+   3
+  ],
+  "e": "When downstream automation depends on the structure, enforce it with a schema (--json-schema with JSON output) instead of describing it. Examples improve consistency but do not guarantee it."
+ },
+ {
+  "s": "CI",
+  "d": 3,
+  "t": "CLI for CI",
+  "h": 0,
+  "q": "A scheduled job runs claude -p with a broad prompt. One night it loops on a failing command for hours and consumes a large budget. The job must remain non-interactive. Which configuration prevents a repeat?",
+  "o": [
+   "Limits on the number of agentic turns and on spend for the run, with only the tools the job needs pre-approved.",
+   "Removal of the -p flag, so that the job stops and waits for a person whenever something goes wrong.",
+   "An added sentence in the prompt telling the job to stop when it is no longer making progress.",
+   "Two scheduled runs per night instead of one, so that each of them does half of the work."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Runaway executions are prevented with hard limits: a cap on agentic turns (--max-turns), a cap on spend (--max-budget-usd), and a permission setup that allows only what the job needs. Removing -p makes a pipeline hang waiting for input."
+ },
+ {
+  "s": "CI",
+  "d": 3,
+  "t": "Test generation quality",
+  "h": 0,
+  "q": "Tests generated in CI duplicate scenarios that already exist, and many of them assert trivial things such as \"the function returns a value\". Which change improves quality most?",
+  "o": [
+   "Ask for twice as many tests in each run, and add a later step that deletes the ones that turn out to be weak or redundant.",
+   "Raise the coverage percentage requested in the prompt of the job, so that more of the code has to be exercised by the tests.",
+   "Provide the existing test files as context, and document the fixture conventions and what makes a test meaningful.",
+   "Generate the tests with a larger model than the one the job uses today, and keep the rest of the configuration unchanged."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Existing tests in context prevent duplicates; documented fixtures and explicit criteria for valuable tests reduce trivial assertions."
+ },
+ {
+  "s": "CI",
+  "d": 4,
+  "t": "False positives: project conventions",
+  "h": 0,
+  "q": "An automated reviewer keeps flagging the team’s deliberate patterns as problems, for example a repository-wide convention of returning result objects instead of throwing exceptions. Developers dismiss these findings every time. What is the most effective fix?",
+  "o": [
+   "Tell the reviewer to report only the findings about which it is highly confident, and to stay silent on anything it is unsure about.",
+   "Document the accepted patterns and exclusion criteria as persistent project context applied on every review.",
+   "Have developers reply to each false positive with an explanation, so that the reviewer learns from the replies over time.",
+   "Lower the maximum number of findings that the reviewer may report per review, so that fewer false positives get through."
+  ],
+  "a": [
+   1
+  ],
+  "e": "False positives on deliberate patterns are fixed by supplying project-specific conventions and exclusion criteria as persistent context. Confidence-based filtering does not improve precision, and the reviewer has no memory of replies between runs."
+ },
+ {
+  "s": "CI",
+  "d": 4,
+  "t": "False positives: project conventions",
+  "h": 0,
+  "q": "A team adds its conventions to the prompt of one review job, and false positives drop. A week later, a second pipeline set up by another team member shows the old false positives again. What is the root cause, and what is the fix?",
+  "o": [
+   "The second pipeline runs a different model version, which interprets the code differently; pin the same version in both pipelines.",
+   "The conventions were too long to be followed reliably across runs; shorten them and add them to the first job’s prompt again.",
+   "The second pipeline starts with an empty context; have it resume the session of the first pipeline so it inherits the conventions.",
+   "The conventions lived in one job’s prompt; move them to project-level configuration such as CLAUDE.md, loaded by every review."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Conventions must be persistent context applied on every review, not text in one job’s prompt. Project-level CLAUDE.md is the mechanism that every invocation in the repository loads."
+ },
+ {
+  "s": "CI",
+  "d": 4,
+  "t": "Output truncation",
+  "h": 0,
+  "q": "A review of a 40-file pull request returns a JSON array of findings that ends abruptly in the middle of an object, and the parser fails. The stop reason shows that the output limit was reached. The team has already raised max_tokens once. What is the more robust fix?",
+  "o": [
+   "Raise max_tokens again, this time to the maximum value the model allows, so that even the largest review fits in one response.",
+   "Ask the model to write each finding in fewer words, and to leave out the suggested fix when the finding is self-explanatory.",
+   "Split the review into smaller scoped calls, such as one per file or group of files, and merge the resulting arrays.",
+   "Send the same request again, repeatedly, until a response happens to fit within the output limit and parses correctly."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Truncated structured output is resolved by splitting the task into smaller scoped calls and merging the results, not by pushing max_tokens beyond practical limits. Smaller per-file passes also avoid attention dilution."
+ },
+ {
+  "s": "EX",
+  "d": 5,
+  "t": "Human review routing",
+  "h": 0,
+  "q": "An extraction pipeline sends a random 10% of documents to human reviewers. The reviewers spend most of their time confirming extractions that were already correct, while errors in handwritten forms pass unreviewed. Reviewer capacity cannot grow. Which routing strategy is best?",
+  "o": [
+   "Raise the random sample from 10% to 30% of all documents, so that more of the handwritten forms are seen by a reviewer.",
+   "Route by field-level confidence and document characteristics, sending low-confidence or ambiguous extractions to reviewers.",
+   "Send every handwritten form to the reviewers and no other documents, since that is where the errors have been found so far.",
+   "Stop the human review altogether and rely on schema validation of the output to catch the remaining extraction errors."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Limited reviewer capacity should be directed by confidence scores, document characteristics and field-level ambiguity, not spent at random. Reviewing only handwritten forms covers one known pattern and misses the rest."
+ },
+ {
+  "s": "EX",
+  "d": 5,
+  "t": "Human review routing",
+  "h": 0,
+  "q": "A pipeline routes a document to human review when the model’s overall confidence for that document is below 0.8. Errors keep appearing in one field, the tax ID, on documents that scored 0.95 overall. What is the most appropriate change?",
+  "o": [
+   "Raise the threshold for the overall document confidence from 0.8 to 0.97, so that these documents are also sent to review.",
+   "Send every document that contains a tax ID to the human reviewers, regardless of the confidence the model reports for it.",
+   "Add an instruction asking the model to be more careful with tax IDs and to lower its confidence when it is not certain.",
+   "Route on field-level confidence, calibrated with a labeled validation set, so one uncertain field triggers review."
+  ],
+  "a": [
+   3
+  ],
+  "e": "A document-level score hides a weak field. Route on field-level confidence, with thresholds calibrated on a labeled validation set. Raising the document threshold sends many more documents to review without targeting the problem."
+ },
+ {
+  "s": "EX",
+  "d": 5,
+  "t": "Human review routing",
+  "h": 0,
+  "q": "A team has moved from random sampling to confidence-based routing for human review. A manager now proposes dropping all checks of high-confidence extractions, since \"the model is sure about them\". What is the best response?",
+  "o": [
+   "Keep a stratified random sample of high-confidence extractions, to measure the real error rate and detect new error patterns.",
+   "Agree with the proposal, because reviewing high-confidence extractions wastes the reviewers’ limited time.",
+   "Return to purely random sampling of all documents, because confidence scores cannot be trusted at all.",
+   "Ask the model to report lower confidence scores whenever there is a chance that it might be wrong."
+  ],
+  "a": [
+   0
+  ],
+  "e": "Confidence routing decides where reviewers spend most of their time, but a stratified random sample of high-confidence extractions is still needed to measure the actual error rate and to catch patterns the scores do not reveal."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Sync vs Batch API",
+  "h": 0,
+  "q": "A company runs three workloads: a fraud check that blocks a payment until it returns; a monthly compliance summary of 80,000 documents; and a chat assistant. To cut costs, a manager wants to move all three to the Message Batches API. Which is the right decision?",
+  "o": [
+   "Move all three workloads; in practice, batch results usually arrive quickly.",
+   "Move the fraud check and the monthly summary, and keep the chat synchronous.",
+   "Move only the monthly summary; keep the fraud check and the chat on the synchronous API.",
+   "Move none of them; the batch API cannot handle a job of 80,000 documents."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Batch processing suits non-blocking, latency-tolerant work. The fraud check blocks a workflow and the chat is interactive, so both need the synchronous API. \"Usually quick\" is not a guarantee."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Sync vs Batch API",
+  "h": 0,
+  "q": "A document workflow must return results within one hour of submission. Nothing waits on any individual result, so the workflow is not blocking. An engineer chooses the Message Batches API for its 50% saving. Why is this a risk?",
+  "o": [
+   "Requests sent through the batch API cannot use JSON schemas, so the results would not be structured in the way the workflow needs.",
+   "A batch can take up to 24 hours and has no guaranteed latency, so a one-hour requirement cannot be assured.",
+   "Results that come back from a batch arrive in arbitrary order and cannot be matched to the requests that produced them.",
+   "The 50% saving applies only to batches that contain more than 10,000 requests, which this workflow would rarely reach."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Being non-blocking is not enough: the acceptable processing window matters too. With up to 24 hours and no latency SLA, batch cannot assure a one-hour window. Results are matched with custom_id."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Sync vs Batch API",
+  "h": 0,
+  "q": "An extraction step needs the model to call a lookup tool, receive the result, and then finish its answer, all within one request. The workload is not urgent, so the team plans to use the Message Batches API. What is the problem?",
+  "o": [
+   "There is no problem: a batch request behaves exactly like a synchronous one, and only the time at which the result arrives differs.",
+   "Tools cannot be defined at all in requests that go through the batch API, so the lookup tool would be rejected on submission.",
+   "Batch pricing is not applied to requests that include tool definitions, so the expected saving would not materialize.",
+   "A batch request cannot run a tool mid-request and return its result to the model; this needs the synchronous API or a redesign."
+  ],
+  "a": [
+   3
+  ],
+  "e": "The batch API does not support multi-turn tool calling within a single request: there is no step where your code runs the tool and returns the result. Tools can be defined, for example to force structured output."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Structured output method",
+  "h": 0,
+  "q": "A downstream system rejects any response that does not match a schema exactly. Three options are considered: describing the JSON format in the prompt; prefilling the start of the response with an opening brace; and defining a tool whose input is the JSON schema and requiring the model to call it. Which is the most reliable for strict compliance?",
+  "o": [
+   "Describing the format in the prompt, together with one complete example.",
+   "Prefilling the start of the response, because that forces JSON syntax.",
+   "Tool use with the JSON schema, with the tool call required.",
+   "Any of the three, as long as the temperature is set to 0."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Tool use with a JSON schema is the most reliable route to schema-compliant output. Prompt-based formatting and prefilling steer the format but do not enforce the schema."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "tool_choice to guarantee a tool call",
+  "h": 0,
+  "q": "An extraction pipeline defines an extract_invoice tool with a JSON schema. About 3% of responses come back as a friendly text message (\"Here is what I found…\") instead of a tool call, and the parser fails. tool_choice is left at its default. What is the fix?",
+  "o": [
+   "Set tool_choice so that a tool call is guaranteed, for example by forcing extract_invoice.",
+   "Add the sentence \"always call the extraction tool\" to the system prompt.",
+   "Raise max_tokens, so that the model has enough room to call the tool.",
+   "Detect every response that contains text, and send the request again."
+  ],
+  "a": [
+   0
+  ],
+  "e": "With \"auto\" the model may answer in text. Forcing the tool (or \"any\" when there are several) guarantees a tool call. An instruction lowers the rate but does not guarantee it."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Schemas: optional and nullable",
+  "h": 0,
+  "q": "A schema requires warranty_period as a string. Many documents do not mention a warranty, and for those the extraction returns values such as \"12 months\". Which change addresses the cause?",
+  "o": [
+   "Add the instruction \"do not invent values that are not in the document\" to the extraction prompt.",
+   "Make the field nullable, so that null can be returned when the document has no such information.",
+   "Validate each returned value against a list of the warranty periods that are typical for these products.",
+   "Run the extraction again whenever the returned value looks suspicious, and keep the second result."
+  ],
+  "a": [
+   1
+  ],
+  "e": "A required field forces the model to produce something. Making it nullable lets the model represent missing information accurately instead of fabricating a value."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Schemas: optional and nullable",
+  "h": 0,
+  "q": "payment_method is an enum with the values card, transfer and cash. Documents increasingly mention methods outside this list, and some state the method ambiguously. The model currently forces every case into one of the three values. Which schema design is best?",
+  "o": [
+   "Replace the enum with a free-text string that can hold any payment method exactly as the document states it.",
+   "Add to the enum every payment method that the team is able to think of, and extend the list again when new ones appear.",
+   "Make the field optional, and leave it out of the output whenever the method is not one of the three values in the list.",
+   "Add \"other\" with a detail field for methods outside the list, and \"unclear\" for ambiguous cases."
+  ],
+  "a": [
+   3
+  ],
+  "e": "An \"other\" value with a detail string keeps the categories and stays extensible; \"unclear\" represents ambiguity honestly. Free text gives up the categorization, and omitting the field loses the information."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Extraction accuracy patterns",
+  "h": 0,
+  "q": "Dates arrive as \"03/04/26\", \"4 March 2026\" and \"2026-03-04\". The schema is strict and every output is valid against it, but the date field contains a mix of formats, and day and month are sometimes swapped. What should be added?",
+  "o": [
+   "A stricter schema, in which the date field is marked as required and is given a pattern that the value has to match.",
+   "A larger model for the extraction step of the pipeline, since larger models make fewer mistakes with ambiguous dates.",
+   "Format normalization rules in the prompt, alongside the schema, with examples of the ambiguous cases.",
+   "A retry whenever the returned date does not look like ISO 8601, sending the validation error back to the model."
+  ],
+  "a": [
+   2
+  ],
+  "e": "A strict schema guarantees structure, not consistent content. Format normalization instructions alongside the schema handle inconsistent source formatting. A retry fixes the format but not a swapped day and month."
+ },
+ {
+  "s": "EX",
+  "d": 4,
+  "t": "Extraction accuracy patterns",
+  "h": 0,
+  "q": "An extraction works well on invoices that use tables and poorly on invoices written as paragraphs: required fields come back empty although the information is present. The instructions are detailed and the schema is correct. What is the most effective improvement?",
+  "o": [
+   "Few-shot examples that show correct extraction from each document structure.",
+   "A schema in which a larger number of the fields are marked as required.",
+   "The same instructions, repeated once more at the end of the prompt.",
+   "A lower temperature setting for all of the extraction requests."
+  ],
+  "a": [
+   0
+  ],
+  "e": "When instructions are already detailed, few-shot examples covering the varied document structures are what improves consistency and reduces empty or invented values."
+ },
+ {
+  "s": "EX",
+  "d": 2,
+  "t": "tool_choice and prerequisite order",
+  "h": 0,
+  "q": "A pipeline has two tools: extract_metadata, which identifies the document type and language, and enrich_record, which needs that metadata. With tool_choice on \"auto\", the model sometimes calls enrich_record first, with guessed metadata. What is the correct configuration?",
+  "o": [
+   "Set tool_choice to \"any\" on every request that the pipeline sends, so that the model is always required to call one of the tools.",
+   "Force extract_metadata on the first request, then let the model continue with the next step in a following turn.",
+   "Describe the required order of the two tools in the system prompt and in both tool descriptions, and keep \"auto\".",
+   "Remove enrich_record from the pipeline, and have the model do the enrichment inside the same prompt instead."
+  ],
+  "a": [
+   1
+  ],
+  "e": "Forced tool selection ensures the prerequisite tool runs first; the dependent step is then processed in a follow-up turn. \"any\" guarantees a tool call but not which tool."
+ },
+ {
+  "s": "EX",
+  "d": 2,
+  "t": "tool_choice and prerequisite order",
+  "h": 0,
+  "q": "A system has three extraction tools, one per document type, and the document type is not known beforehand. Occasionally the model answers in plain text instead of calling a tool. The team wants a guarantee of structured output while the model still chooses the appropriate tool. Which setting is correct?",
+  "o": [
+   "tool_choice \"auto\", combined with a stronger instruction in the prompt.",
+   "tool_choice forced to the extraction tool that is used most often.",
+   "tool_choice \"any\".",
+   "tool_choice \"none\", with the text parsed afterwards."
+  ],
+  "a": [
+   2
+  ],
+  "e": "\"any\" means the model must call a tool but may choose which one, which fits several schemas with an unknown document type. Forcing one tool would apply the wrong schema to the other types."
+ },
+ {
+  "s": "EX",
+  "d": 2,
+  "t": "tool_choice and prerequisite order",
+  "h": 0,
+  "q": "A refund workflow must look up the customer before any refund tool is called. A developer forces the lookup tool with tool_choice on every request of the conversation. The lookup now runs correctly, but the agent calls it again on each turn and never reaches the refund step. What is wrong?",
+  "o": [
+   "The description of the refund tool is too short for the agent to select it over the lookup tool; expand the description.",
+   "Forced tool selection is unreliable for ordering steps; an instruction in the system prompt should replace it.",
+   "The lookup tool returns too much data on each call, which leaves the agent unable to continue to the refund step.",
+   "Forcing a tool applies to every request where it is set; force it for the first step only, then let later turns choose."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Forced selection makes the model call that tool on every request that carries the setting. Use it for the prerequisite step only, then switch back so that the following steps can proceed."
+ },
+ {
+  "s": "CS",
+  "d": 1,
+  "t": "Hooks and enforcement",
+  "h": 0,
+  "q": "A policy states that orders above $1,000 can never be cancelled by the agent without a supervisor. The rule is in the system prompt, with examples, and compliance is 98%. The business considers the remaining 2% unacceptable. What should be done?",
+  "o": [
+   "Add more examples of large cancellations to the prompt, in order to bring compliance closer to 100% over time.",
+   "Enforce it with a hook that intercepts the cancellation call, blocks it above the limit and redirects to escalation.",
+   "Have the agent state its confidence before each cancellation, and send the low-confidence ones to a supervisor for a decision.",
+   "Move the rule to the very top of the system prompt and repeat it at the end, so that it carries more weight."
+  ],
+  "a": [
+   1
+  ],
+  "e": "When a business rule requires guaranteed compliance, use programmatic enforcement. Prompt instructions and examples always leave a non-zero failure rate."
+ },
+ {
+  "s": "CS",
+  "d": 5,
+  "t": "Escalation",
+  "h": 0,
+  "q": "A customer writes: \"I want to speak to a person, please.\" The request concerns a password reset that the agent could complete in one step. What should the agent do?",
+  "o": [
+   "Escalate to a human immediately.",
+   "Complete the password reset first, and then offer a human.",
+   "Explain that it can solve this faster, and ask whether a human is still wanted.",
+   "Escalate only if the customer repeats the request."
+  ],
+  "a": [
+   0
+  ],
+  "e": "An explicit request for a human is honored immediately, without first attempting resolution, however simple the issue is."
+ },
+ {
+  "s": "CS",
+  "d": 5,
+  "t": "Escalation",
+  "h": 0,
+  "q": "A customer writes: \"This is ridiculous, I have been charged twice and nobody helps me.\" They have not asked for a human, and refunding a duplicate charge is within the agent’s authority. What should the agent do?",
+  "o": [
+   "Escalate immediately, because the sentiment of the message is strongly negative and the customer has already contacted support before.",
+   "Ignore the tone of the message, ask for the order number, and process the refund without commenting on the complaint.",
+   "Acknowledge the frustration and offer to fix the duplicate charge now, escalating if the customer then asks for a human.",
+   "Apologize, and explain the refund policy in detail before asking whether the customer would like any further help."
+  ],
+  "a": [
+   2
+  ],
+  "e": "Sentiment is not a reliable escalation trigger. When no human was requested and the issue is within capability, acknowledge the frustration and offer resolution."
+ },
+ {
+  "s": "CS",
+  "d": 2,
+  "t": "Structured errors",
+  "h": 0,
+  "q": "A tool call fails because the requested refund exceeds the policy limit. The tool returns only \"Error\". The agent retries three times and then tells the customer that \"a technical problem occurred\". What should the tool return?",
+  "o": [
+   "The same message, with a stack trace added, so that the agent has more technical detail to decide what to do next.",
+   "An empty successful result, so that the agent stops retrying and moves on to the rest of the customer’s request.",
+   "A transient error with a suggestion to wait before retrying, so that the agent spaces out its attempts.",
+   "A structured error: business rule violation, not retryable, with an explanation the agent can give the customer."
+  ],
+  "a": [
+   3
+  ],
+  "e": "Structured error metadata (category, retryable flag, readable description) lets the agent choose the right recovery. A business rule violation is not retryable and should come with an explanation suitable for the customer."
+ }
+];
+</script>
+
+<script>
+(function () {
+  var KEY = 'ccarf-simulado-2-v1', LIMIT = 120 * 60, LET = 'ABCDE';
+  var state = { answers: {}, flags: {}, struck: {}, start: null, end: null, done: false };
+  try { var saved = JSON.parse(localStorage.getItem(KEY)); if (saved && saved.answers) state = saved; } catch (e) {}
+  state.struck = state.struck || {};
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  var app = $('app'), list = $('list'), grid = $('grid'), cards = [], cells = [];
+  var NUM = ['', 'ONE', 'TWO', 'THREE'];
+
+  // Build
+  var last = null;
+  Q.forEach(function (item, i) {
+    if (item.s !== last) {
+      last = item.s;
+      var sc = el('div', 'card scenario');
+      sc.appendChild(el('h2', null, 'Scenario: ' + SCEN[item.s].name));
+      sc.appendChild(el('p', null, SCEN[item.s].desc));
+      list.appendChild(sc);
+    }
+    var card = el('div', 'card'); card.id = 'q' + (i + 1);
+    var label = el('div', 'label');
+    label.appendChild(el('span', null, 'Exercício ' + (i + 1)));
+    if (item.a.length > 1) label.appendChild(el('span', 'tag multi', 'Select ' + NUM[item.a.length]));
+    var fb = el('button', 'flagbtn', 'Revisar depois');
+    fb.onclick = function () { if (state.flags[i]) delete state.flags[i]; else state.flags[i] = 1; save(); paint(); };
+    label.appendChild(fb);
+    card.appendChild(label);
+    card.appendChild(el('div', 'q', '[' + SCEN[item.s].tag + '] ' + item.q));
+    item.o.forEach(function (text, k) {
+      var row = el('div', 'optrow'), b = el('button', 'opt');
+      b.appendChild(el('span', 'let', LET[k]));
+      b.appendChild(el('span', null, text));
+      b.onclick = function () { pick(i, k); };
+      b.oncontextmenu = function (ev) { ev.preventDefault(); strike(i, k); };
+      var x = el('button', 'strike', '✕');
+      x.title = 'Riscar alternativa (ou clique direito nela)';
+      x.setAttribute('aria-label', 'Riscar alternativa ' + LET[k]);
+      x.onclick = function () { strike(i, k); };
+      row.appendChild(b); row.appendChild(x);
+      card.appendChild(row);
+    });
+    var ex = el('div', 'expl');
+    ex.appendChild(el('b', null, 'Domain ' + item.d + ' · ' + item.t + '. '));
+    ex.appendChild(document.createTextNode('Correct: ' + item.a.map(function (k) { return LET[k]; }).join(', ') + '. ' + item.e));
+    card.appendChild(ex);
+    list.appendChild(card); cards.push(card);
+
+    var c = el('a', null, String(i + 1)); c.href = '#q' + (i + 1);
+    c.onclick = function (ev) { ev.preventDefault(); card.scrollIntoView({ block: 'start' }); };
+    grid.appendChild(c); cells.push(c);
+  });
+
+  function pick(i, k) {
+    if (state.done) return;
+    if (!state.start) state.start = Date.now();
+    var cur = (state.answers[i] || []).slice(), n = Q[i].a.length, at = cur.indexOf(k);
+    if (n === 1) cur = at >= 0 ? [] : [k];
+    else if (at >= 0) cur.splice(at, 1);
+    else { cur.push(k); if (cur.length > n) cur.shift(); }
+    if (cur.length) state.answers[i] = cur; else delete state.answers[i];
+    cur.forEach(function (c) { setStruck(i, c, false); });
+    save(); paint();
+  }
+
+  function struckOf(i) { return state.struck[i] || []; }
+  function setStruck(i, k, on) {
+    var s = struckOf(i).filter(function (x) { return x !== k; });
+    if (on) s.push(k);
+    if (s.length) state.struck[i] = s; else delete state.struck[i];
+  }
+  function strike(i, k) {
+    if (state.done) return;
+    var on = struckOf(i).indexOf(k) < 0;
+    setStruck(i, k, on);
+    if (on && state.answers[i]) {
+      var rest = state.answers[i].filter(function (x) { return x !== k; });
+      if (rest.length) state.answers[i] = rest; else delete state.answers[i];
+    }
+    save(); paint();
+  }
+
+  function isRight(i) {
+    var a = (state.answers[i] || []).slice().sort().join(','), b = Q[i].a.slice().sort().join(',');
+    return a === b;
+  }
+  function answered() { return Object.keys(state.answers).length; }
+
+  function paint() {
+    app.classList.toggle('done', state.done);
+    Q.forEach(function (item, i) {
+      var sel = state.answers[i] || [], card = cards[i], cell = cells[i];
+      card.classList.toggle('is-flagged', !!state.flags[i]);
+      card.classList.toggle('q-right', state.done && isRight(i));
+      card.classList.toggle('q-wrong', state.done && !isRight(i));
+      Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (b, k) {
+        var chosen = sel.indexOf(k) >= 0, good = item.a.indexOf(k) >= 0;
+        b.className = 'opt' + (chosen ? ' sel' : '') + (state.done && good ? ' correct' : '') + (state.done && chosen && !good ? ' incorrect' : '');
+        var out = struckOf(i).indexOf(k) >= 0;
+        b.parentNode.classList.toggle('struck', out);
+        b.nextSibling.setAttribute('aria-pressed', out ? 'true' : 'false');
+      });
+      cell.className = state.done ? (isRight(i) ? 'right' : 'wrong') : ((sel.length ? 'answered' : '') + (state.flags[i] ? ' flagged' : ''));
+    });
+    $('count').innerHTML = 'Respondidas <b>' + answered() + '/' + Q.length + '</b>';
+    $('finish').hidden = state.done;
+    if (state.done) results();
+    tick();
+  }
+
+  function fmt(sec) { var m = Math.floor(Math.abs(sec) / 60), s = Math.abs(sec) % 60; return (sec < 0 ? '-' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+  function elapsed() { return state.start ? Math.floor(((state.end || Date.now()) - state.start) / 1000) : 0; }
+  function tick() {
+    var left = LIMIT - elapsed(), t = $('timer');
+    t.innerHTML = (state.done ? 'Tempo usado <b>' + fmt(elapsed()) : 'Tempo <b>' + fmt(left)) + '</b>';
+    t.classList.toggle('late', !state.done && left < 0);
+  }
+  setInterval(function () { if (!state.done) tick(); }, 1000);
+
+  function tally(keyOf) {
+    var out = {};
+    Q.forEach(function (item, i) { var k = keyOf(item); out[k] = out[k] || { ok: 0, n: 0 }; out[k].n++; if (isRight(i)) out[k].ok++; });
+    return out;
+  }
+  function rows(host, data, nameOf) {
+    host.textContent = '';
+    Object.keys(data).forEach(function (k) {
+      var r = el('div', 'row'), left = el('div');
+      left.appendChild(el('div', null, nameOf(k)));
+      var bar = el('div', 'bar'), fill = el('i'); fill.style.width = Math.round(100 * data[k].ok / data[k].n) + '%';
+      bar.appendChild(fill); left.appendChild(bar);
+      r.appendChild(left); r.appendChild(el('div', 'n', data[k].ok + '/' + data[k].n));
+      host.appendChild(r);
+    });
+  }
+  function total() { var ok = 0; Q.forEach(function (_, i) { if (isRight(i)) ok++; }); return ok; }
+
+  function results() {
+    var ok = total();
+    $('score').textContent = ok + ' / ' + Q.length + ' corretas (' + Math.round(100 * ok / Q.length) + '%)';
+    $('scoresub').textContent = 'Tempo usado: ' + fmt(elapsed()) + ' de 120:00 · ' + (Q.length - answered()) + ' sem resposta';
+    rows($('bydomain'), tally(function (q) { return q.d; }), function (k) { return 'D' + k + ' · ' + DOMAINS[k]; });
+    rows($('byscenario'), tally(function (q) { return q.s; }), function (k) { return SCEN[k].name; });
+    rows($('byobjective'), tally(function (q) { return q.t; }), function (k) { return k; });
+  }
+
+  function summary() {
+    var ok = total(), lines = ['Simulado CCAR-F 2: ' + ok + '/' + Q.length + ' (' + Math.round(100 * ok / Q.length) + '%) · tempo ' + fmt(elapsed())];
+    var d = tally(function (q) { return q.d; });
+    lines.push(Object.keys(d).map(function (k) { return 'D' + k + ' ' + d[k].ok + '/' + d[k].n; }).join(' · '));
+    var wrong = [];
+    Q.forEach(function (item, i) {
+      if (isRight(i)) return;
+      var mine = (state.answers[i] || []).map(function (k) { return LET[k]; }).join('') || '-';
+      wrong.push((i + 1) + ' [' + item.t + '] ' + mine + '→' + item.a.map(function (k) { return LET[k]; }).join(''));
+    });
+    lines.push('Erradas (n [task] minha→correta): ' + (wrong.join(', ') || 'nenhuma'));
+    var fl = Object.keys(state.flags).map(function (k) { return +k + 1; });
+    if (fl.length) lines.push('Marcadas para revisar: ' + fl.join(', '));
+    return lines.join('\n');
+  }
+
+  // Two-step buttons instead of browser dialogs
+  function twoStep(btn, armedText, action) {
+    var idle = btn.textContent, timer = null;
+    btn.onclick = function () {
+      if (btn.classList.contains('armed')) { clearTimeout(timer); btn.classList.remove('armed'); btn.textContent = idle; action(); return; }
+      btn.classList.add('armed'); btn.textContent = armedText();
+      timer = setTimeout(function () { btn.classList.remove('armed'); btn.textContent = idle; }, 4000);
+    };
+  }
+  twoStep($('finish'), function () {
+    var miss = Q.length - answered();
+    return miss ? 'Faltam ' + miss + ' · clicar de novo' : 'Confirmar finalização';
+  }, function () {
+    state.done = true; state.end = Date.now(); if (!state.start) state.start = state.end;
+    save(); paint(); window.scrollTo(0, 0);
+  });
+  twoStep($('reset'), function () { return 'Apagar tudo? Clicar de novo'; }, function () {
+    state = { answers: {}, flags: {}, struck: {}, start: null, end: null, done: false };
+    app.classList.remove('only-wrong'); $('onlywrong').textContent = 'Mostrar só as erradas'; $('copyout').style.display = 'none';
+    save(); paint(); window.scrollTo(0, 0);
+  });
+
+  $('onlywrong').onclick = function () {
+    var on = app.classList.toggle('only-wrong');
+    this.textContent = on ? 'Mostrar todas' : 'Mostrar só as erradas';
+  };
+  $('copy').onclick = function () {
+    var text = summary(), box = $('copyout'), btn = this;
+    box.value = text; box.style.display = 'block'; box.select();
+    var done = function () { btn.textContent = 'Copiado'; setTimeout(function () { btn.textContent = 'Copiar resultado'; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+    else { try { document.execCommand('copy'); done(); } catch (e) {} }
+  };
+
+  paint();
+})();
+</script>
+</body>
+</html>
